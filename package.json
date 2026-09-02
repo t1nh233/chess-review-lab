@@ -1,0 +1,47 @@
+{
+  "name": "chess-review-lab",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "vitest run tests/integration",
+    "test:safety": "vitest run tests/unit/safety.test.ts tests/integration/messaging.test.ts tests/integration/safetyHandlers.test.ts",
+    "test:stockfish": "node scripts/stockfish-smoke.cjs",
+    "validate:dist": "node scripts/validate-dist.cjs",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "chess.js": "1.4.0",
+    "idb": "8.0.3",
+    "lucide-react": "0.542.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1",
+    "stockfish": "18.0.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.34.0",
+    "@testing-library/jest-dom": "6.8.0",
+    "@testing-library/react": "16.3.0",
+    "@types/chrome": "0.1.4",
+    "@types/node": "24.3.0",
+    "@types/react": "19.1.12",
+    "@types/react-dom": "19.1.9",
+    "@vitejs/plugin-react": "5.0.2",
+    "eslint": "9.34.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-react-refresh": "0.4.20",
+    "fake-indexeddb": "^6.2.4",
+    "globals": "16.3.0",
+    "jsdom": "26.1.0",
+    "typescript": "5.9.2",
+    "typescript-eslint": "8.42.0",
+    "vite": "^7.3.6",
+    "vitest": "^3.2.7"
+  }
+}

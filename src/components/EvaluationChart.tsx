@@ -1,0 +1,6 @@
+import type { MoveReview } from "../analysis/analysisTypes";
+import { evalToCp } from "../analysis/evaluation";
+export function EvaluationChart({ moves, selectedPly, onSelect }: { moves: MoveReview[]; selectedPly: number; onSelect: (ply: number) => void }) {
+  const points = moves.map((move, i) => `${moves.length === 1 ? 50 : (i / (moves.length - 1)) * 100},${50 - Math.tanh(evalToCp(move.evalAfter) / 500) * 42}`).join(" ");
+  return <div className="chart-wrap"><svg className="chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Evaluation graph"><line x1="0" y1="50" x2="100" y2="50" className="chart-zero"/><polyline points={points} className="chart-line"/>{moves.map((move, i) => <circle key={move.ply} cx={moves.length === 1 ? 50 : (i / (moves.length - 1)) * 100} cy={50 - Math.tanh(evalToCp(move.evalAfter) / 500) * 42} r={selectedPly === move.ply ? 2.4 : 1.2} className={selectedPly === move.ply ? "chart-point active" : "chart-point"} role="button" tabIndex={0} aria-label={`Select move ${move.moveNumber}${move.color === "black" ? "..." : "."}${move.san}`} onClick={() => onSelect(move.ply)} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(move.ply); } }}/>)}</svg></div>;
+}

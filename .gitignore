@@ -1,0 +1,21 @@
+node_modules/
+dist/
+coverage/
+.vite/
+.npm-cache/
+test-results/
+playwright-report/
+
+# Local environment and temporary artifacts
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*.bak
+*.pid
+.DS_Store
+Thumbs.db
