@@ -55,9 +55,12 @@ npm run test:safety
 npm run build
 npm run test:stockfish
 npm run validate:dist
+npm run verify:release
 ```
 
 The Stockfish smoke test loads the exact JS/WASM files from `dist/`, performs UCI and readiness handshakes, analyzes the starting position, verifies a forced capture, and verifies a mate score. It intentionally avoids brittle exact centipawn expectations.
+
+`npm run verify:release` is the fail-fast, non-interactive release gate. Complete the human checklist at `docs/MANUAL_EDGE_ACCEPTANCE.md` before calling a build a manually accepted release candidate.
 
 ## Build
 
@@ -126,7 +129,7 @@ Automatic extraction uses only legitimately available public page content and is
 
 - Chess.com markup can change; automatic extraction can fail and manual PGN import is always available.
 - The conservative completion detector may classify an unfamiliar completed page as `UNKNOWN` rather than risk live assistance.
-- The full single-threaded Stockfish WASM is approximately 113 MB, so first initialization can be noticeably slower than a lite build.
+- The packaged lite single-threaded Stockfish 18 WASM is approximately 7.3 MB. It is substantially smaller and faster to load than the full 113 MB build, but evaluates less strongly; the configured review depths remain suitable for local post-game review.
 - No cloud synchronization is provided; cached reviews stay in the current Edge profile and are retained up to the configured local limit.
 - Browser/Edge unpacked-extension acceptance must be performed on a desktop environment that permits loading extensions; automated tests do not replace that manual check.
 

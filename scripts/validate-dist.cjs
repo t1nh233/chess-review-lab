@@ -7,6 +7,19 @@ const requireFile = (relative) => {
   const target = path.join(root, relative);
   if (!fs.existsSync(target) || !fs.statSync(target).isFile()) failures.push(`Missing file: ${relative}`);
 };
+const requirePngSize = (relative, expected) => {
+  const target = path.join(root, relative);
+  if (!fs.existsSync(target)) return;
+  const png = fs.readFileSync(target);
+  const signature = "89504e470d0a1a0a";
+  if (png.length < 24 || png.subarray(0, 8).toString("hex") !== signature) {
+    failures.push(`Invalid PNG: ${relative}`);
+    return;
+  }
+  const width = png.readUInt32BE(16);
+  const height = png.readUInt32BE(20);
+  if (width !== expected || height !== expected) failures.push(`Icon ${relative} is ${width}x${height}; expected ${expected}x${expected}.`);
+};
 requireFile("manifest.json");
 if (failures.length) throw new Error(failures.join("\n"));
 
@@ -20,14 +33,20 @@ if (/https?:/.test(csp) || /'unsafe-eval'/.test(csp)) failures.push("Extension C
 
 requireFile(manifest.background?.service_worker ?? "__missing__");
 requireFile(manifest.action?.default_popup ?? "__missing__");
-for (const icon of Object.values(manifest.icons ?? {})) requireFile(icon);
+for (const [size, icon] of Object.entries(manifest.icons ?? {})) {
+  requireFile(icon);
+  requirePngSize(icon, Number(size));
+}
 for (const script of manifest.content_scripts ?? []) for (const file of script.js ?? []) requireFile(file);
 for (const required of [
-  "review.html", "engine/stockfishWorker.js", "engine/stockfish-18-single.js",
-  "engine/stockfish-18-single.wasm", "engine/COPYING.txt", "LICENSES_THIRD_PARTY.md",
+  "review.html", "engine/stockfishWorker.js", "engine/stockfish-18-lite-single.js",
+  "engine/stockfish-18-lite-single.wasm", "engine/COPYING.txt", "LICENSES_THIRD_PARTY.md",
   "licenses/chess.js-BSD-2-Clause.txt", "licenses/idb-ISC.txt", "licenses/lucide-react-ISC.txt",
   "licenses/react-MIT.txt", "licenses/react-dom-MIT.txt", "licenses/scheduler-MIT.txt",
 ]) requireFile(required);
+if (fs.existsSync(path.join(root, "engine/stockfish-18-single.wasm")) || fs.existsSync(path.join(root, "engine/stockfish-18-single.js"))) {
+  failures.push("Obsolete full Stockfish artifacts must not be included with the lite release build.");
+}
 
 for (const htmlName of [manifest.action?.default_popup, "review.html"].filter(Boolean)) {
   const html = fs.readFileSync(path.join(root, htmlName), "utf8");

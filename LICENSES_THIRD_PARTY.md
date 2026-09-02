@@ -4,7 +4,7 @@ Chess Review Lab bundles or includes production code from the packages below. Th
 
 | Software | Version | License | Use |
 | --- | --- | --- | --- |
-| Stockfish / stockfish.js | 18.0.8 (Stockfish 18 build) | GNU GPL v3 | Local chess engine, JavaScript loader, and WebAssembly binary |
+| Stockfish / stockfish.js | 18.0.8 (Stockfish 18 lite single-thread build) | GNU GPL v3 | Local chess engine, JavaScript loader, and WebAssembly binary |
 | chess.js | 1.4.0 | BSD 2-Clause | PGN parsing and legal move generation |
 | idb | 8.0.3 | ISC | IndexedDB promise wrapper |
 | lucide-react | 0.542.0 | ISC | UI icons |
