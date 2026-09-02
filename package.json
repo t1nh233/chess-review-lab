@@ -14,6 +14,8 @@
     "test:safety": "vitest run tests/unit/safety.test.ts tests/integration/messaging.test.ts tests/integration/safetyHandlers.test.ts",
     "test:stockfish": "node scripts/stockfish-smoke.cjs",
     "validate:dist": "node scripts/validate-dist.cjs",
+    "benchmark:analysis": "node scripts/benchmark-analysis.cjs",
+    "benchmark:compatibility": "node scripts/compatibility-benchmark.cjs",
     "verify:release": "npm run typecheck && npm run lint && npm run test:unit && npm run test:integration && npm run test:safety && npm run build && npm run test:stockfish && npm run validate:dist",
     "test:watch": "vitest"
   },

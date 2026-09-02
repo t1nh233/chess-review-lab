@@ -44,7 +44,7 @@ export function parsePgn(pgn: string): ParsedGame {
       if (!move) throw new Error("Move replay failed");
       moves.push({
         ply: moves.length + 1,
-        moveNumber: Math.floor(moves.length / 2) + 1,
+        moveNumber: Number.parseInt(fenBefore.split(" ")[5] ?? "1", 10),
         color: colorName(move.color),
         san: move.san,
         uci: toUci(move),

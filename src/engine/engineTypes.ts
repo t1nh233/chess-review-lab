@@ -1,8 +1,23 @@
 import type { GameSafetyState } from "../safety/liveGameGuard";
 
 export interface NormalizedEval { cp?: number; mate?: number }
-export interface EngineAnalysisRequest { fen: string; depth?: number; movetimeMs?: number; multiPv?: number }
-export interface EngineLine { multipv: number; depth: number; scoreCp?: number; mate?: number; moves: string[] }
+export interface EngineProgress {
+  positionIndex: number;
+  currentDepth: number;
+  targetDepth: number;
+  nodes?: number;
+  nps?: number;
+  multipv?: number;
+}
+export interface EngineAnalysisRequest {
+  fen: string;
+  depth?: number;
+  movetimeMs?: number;
+  multiPv?: number;
+  positionIndex?: number;
+  onProgress?: (progress: EngineProgress) => void;
+}
+export interface EngineLine { multipv: number; depth: number; scoreCp?: number; mate?: number; nodes?: number; nps?: number; moves: string[] }
 export interface EngineAnalysisResult { bestMove: string; depth: number; lines: EngineLine[] }
 export interface ChessEngine {
   initialize(safetyState: GameSafetyState): Promise<void>;

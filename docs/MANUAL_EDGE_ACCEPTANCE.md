@@ -17,7 +17,7 @@ Use only completed historical games or imported PGNs for engine analysis. Never 
 6. Confirm Chess Review Lab appears with its knight/analysis icon and no manifest error.
 7. Pin Chess Review Lab to the toolbar.
 
-Result: **NOT RUN**  
+Result: **NOT RUN**
 Evidence: ________________________________________________
 
 ## Test A — Popup
@@ -34,7 +34,7 @@ Expected:
 - Settings exists.
 - Previous Reviews exists.
 
-Result: **NOT RUN**  
+Result: **NOT RUN**
 Evidence: ________________________________________________
 
 ## Test B — Standard PGN and navigation
@@ -212,6 +212,34 @@ Expected:
 Result: **NOT RUN**  
 Evidence: ________________________________________________
 
+## Test K — Progressive performance
+
+1. Import `tests/fixtures/chesscom-low-rating-001.pgn` and start Compatibility Review.
+2. Confirm useful provisional moves and graph data appear during the fast pass.
+3. Confirm displayed depth comes from changing Stockfish UCI output and reaches depth 20.
+4. During refinement, select a distant move and confirm that area is prioritized after the active search.
+5. Confirm the UI remains responsive and analysis does not restart from position 1.
+
+Expected: progressive results, live depth, responsive navigation, and selection-aware refinement.
+
+Result: **NOT RUN**
+Evidence: ________________________________________________
+
+## Test L — PGN export
+
+1. Complete a review of `tests/fixtures/chesscom-low-rating-001.pgn`.
+2. Under Game summary, open **Export PGN**.
+3. Download and copy both Clean PGN and Analysis PGN.
+4. Re-import the Analysis PGN.
+5. Confirm 118 plies, result `0-1`, and final `59...Qg2#` remain present.
+6. Confirm CRL evaluation, depth, classification, Estimated Accuracy, best move, and PV comments are visible.
+7. Confirm the filename contains player names, date, and export kind, with no reserved characters.
+
+Expected: both local export forms work; annotations remain human-readable; re-import reconstructs the identical mainline and final position. Opening Export alone does not start analysis.
+
+Result: **NOT RUN**
+Evidence: ________________________________________________
+
 ## Acceptance summary
 
 Installation: **NOT RUN**  
@@ -225,5 +253,7 @@ Live-game protection: **NOT RUN**
 Unknown state: **NOT RUN**  
 Completed Chess.com game: **NOT RUN**  
 Runtime consoles: **NOT RUN**
+Progressive performance: **NOT RUN**
+PGN export: **NOT RUN**
 
 Overall manual acceptance: **NOT RUN**

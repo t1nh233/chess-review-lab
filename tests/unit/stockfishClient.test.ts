@@ -58,10 +58,31 @@ describe("StockfishClient lifecycle", () => {
     expect(worker.posted).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "INITIALIZE" }),
       { type: "COMMAND", command: "uci" },
+      { type: "COMMAND", command: "setoption name Hash value 64" },
+      { type: "COMMAND", command: "ucinewgame" },
       { type: "COMMAND", command: "isready" },
     ]));
     client.dispose();
     expect(worker.terminated).toBe(true);
+  });
+
+  it("streams actual UCI depths and does not clear hash for each position", async () => {
+    const worker = new FakeWorker();
+    handshake(worker);
+    const client = clientFor(worker);
+    await client.initialize("SAFE_IMPORTED_PGN");
+    const progress = vi.fn();
+    worker.onPost = (message) => {
+      if (message.type === "COMMAND" && message.command.startsWith("go ")) queueMicrotask(() => {
+        worker.emit({ type: "LINE", line: "info depth 9 multipv 1 score cp 10 nodes 20 nps 2000 pv e2e4" });
+        worker.emit({ type: "LINE", line: "info depth 10 multipv 1 score cp 12 nodes 40 nps 4000 pv e2e4" });
+        worker.emit({ type: "LINE", line: "bestmove e2e4" });
+      });
+    };
+    await client.analyze({ fen: "startpos", depth: 10, positionIndex: 7, onProgress: progress });
+    expect(progress).toHaveBeenLastCalledWith(expect.objectContaining({ positionIndex: 7, currentDepth: 10, targetDepth: 10, nodes: 40, nps: 4000 }));
+    expect(worker.posted.filter((message) => message.type === "COMMAND" && message.command === "ucinewgame")).toHaveLength(1);
+    client.dispose();
   });
 
   it("rejects and disposes when the worker fails to load", async () => {

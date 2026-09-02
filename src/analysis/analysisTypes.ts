@@ -2,13 +2,15 @@ import type { ParsedGame } from "../chess/pgn";
 import type { EngineLine, NormalizedEval } from "../engine/engineTypes";
 
 export type PrimaryClassification = "brilliant" | "great" | "best" | "excellent" | "good" | "inaccuracy" | "mistake" | "blunder";
-export type MoveTag = "missed_opportunity" | "only_move" | "forced" | "sacrifice" | "mate";
+export type MoveTag = "missed_opportunity" | "only_move" | "forced" | "sacrifice" | "mate" | "game_ending";
 
 export interface PositionReview {
   fen: string;
   evaluation: { white: NormalizedEval };
   bestMove?: string;
   lines: EngineLine[];
+  analysisDepth: number;
+  analysisStatus: "provisional" | "final";
 }
 export interface ClassificationEvidence {
   expectedPointsBefore: number; expectedPointsAfter: number; expectedPointsLoss: number;
@@ -22,6 +24,9 @@ export interface MoveReview {
   estimatedAccuracy: number; accuracyWeight: number;
   primaryClassification: PrimaryClassification; tags: MoveTag[];
   bestMove?: string; principalVariation: string[]; criticality: number; explanation: string;
+  continuationLines: EngineLine[];
+  continuationsStatus?: "loading" | "ready";
+  analysisDepth: number; analysisStatus: "provisional" | "final";
   evidence: ClassificationEvidence;
 }
 export interface GameReviewSummary {

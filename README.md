@@ -11,9 +11,10 @@ Chess Review Lab is an original Microsoft Edge Manifest V3 extension for local, 
 - Best, Excellent, Good, Inaccuracy, Mistake, and Blunder classification
 - transparent Great, Brilliant, and missed-opportunity heuristics
 - mover-relative Expected Points and deterministic Estimated Accuracy
-- incremental results, progress indication, cancellation, and worker failure recovery
+- two-stage progressive results, real UCI depth streaming, selection-prioritized refinement, cancellation, and worker failure recovery
 - IndexedDB review cache with versioned keys, retention, previous-review list, and deletion
-- Quick (depth 14/MultiPV 2), Balanced (depth 18/MultiPV 3), and Deep (depth 22/MultiPV 3) presets
+- Fast Review (depth 16), Compatibility Review (depth 20), and Deep Review (depth 22) presets
+- clean and annotated PGN copy/download with round-trip-safe CRL comments
 - fail-closed live-game guard enforced in the popup, Chess.com adapter, service worker, pipeline, engine client, and worker
 
 ## Architecture
@@ -56,11 +57,14 @@ npm run build
 npm run test:stockfish
 npm run validate:dist
 npm run verify:release
+npm run benchmark:analysis
 ```
 
 The Stockfish smoke test loads the exact JS/WASM files from `dist/`, performs UCI and readiness handshakes, analyzes the starting position, verifies a forced capture, and verifies a mate score. It intentionally avoids brittle exact centipawn expectations.
 
 `npm run verify:release` is the fail-fast, non-interactive release gate. Complete the human checklist at `docs/MANUAL_EDGE_ACCEPTANCE.md` before calling a build a manually accepted release candidate.
+
+Measured architecture results and the independent Chess.com-label diagnostic are recorded in [`docs/PERFORMANCE_BENCHMARK.md`](docs/PERFORMANCE_BENCHMARK.md).
 
 ## Build
 
@@ -79,7 +83,13 @@ Edge should show no manifest errors. Keep the `dist/engine`, `dist/licenses`, an
 
 ## Analysis pipeline
 
-For each ply, the pipeline analyzes the pre-move and resulting FEN, reuses exact repeated FEN results, normalizes every engine score to “positive means White advantage,” computes mover-relative Expected Points loss, classifies the move, runs special detectors, computes criticality and Estimated Accuracy, and generates an evidence-backed explanation. Partial serializable reviews are emitted after each analyzed move. An `AbortSignal` sends UCI `stop`; the worker is disposed after the run.
+The pipeline builds one canonical position table from the initial position through the terminal position. A fast MultiPV1 pass emits provisional graph and move data, then a selection-prioritized MultiPV1 pass refines positions to the preset target. Terminal positions remain represented without asking Stockfish for a nonexistent legal move. MultiPV3 is selective and lazy rather than unconditional. A versioned position cache distinguishes base and expanded results and permits a deeper compatible entry to satisfy a shallower request. Scores remain White-relative before mover-relative Expected Points conversion. An `AbortSignal` cancels queued work and sends UCI `stop` to active work.
+
+`npm run benchmark:analysis` reports cold- and warm-cache metrics on a fixed fixture. Set `BENCHMARK_PGN` and `BENCHMARK_STRATEGY=legacy|optimized` to reproduce architecture comparisons. Chess.com uses server-side compute, so this local single-thread engine does not promise identical wall-clock speed.
+
+## PGN export
+
+Clean PGN preserves the immutable imported source. Analysis PGN preserves the mainline and headers while adding Chess Review Lab metadata, conservative NAGs, and human-readable `[%eval]`, `[%depth]`, `[%crl_class]`, `[%crl_accuracy]`, Expected Points, best-move, and PV annotations. Export is entirely local and never starts engine analysis. Imported CRL comments are historical metadata only; re-analysis still runs the engine.
 
 ## Expected Points
 

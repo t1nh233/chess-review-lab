@@ -1,0 +1,11 @@
+[Event "Terminal move export"]
+[Site "Local"]
+[Date "2026.08.21"]
+[Round "-"]
+[White "White"]
+[Black "Black"]
+[Result "0-1"]
+[SetUp "1"]
+[FEN "k5r1/8/8/8/6q1/8/7P/7K b - - 0 59"]
+
+59... Qg2# 0-1

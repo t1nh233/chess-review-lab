@@ -41,6 +41,8 @@ export class StockfishClient implements ChessEngine {
       const uciReady = this.waitFor((line) => line === "uciok", this.startupTimeoutMs, "Stockfish UCI handshake timed out.");
       this.command("uci");
       await uciReady;
+      this.command("setoption name Hash value 64");
+      this.command("ucinewgame");
       const engineReady = this.waitFor((line) => line === "readyok", this.startupTimeoutMs, "Stockfish readiness check timed out.");
       this.command("isready");
       await engineReady;
@@ -61,7 +63,6 @@ export class StockfishClient implements ChessEngine {
     signal?.addEventListener("abort", onAbort, { once: true });
     try {
       this.command(`setoption name MultiPV value ${request.multiPv ?? 1}`);
-      this.command("ucinewgame");
       this.command(`position fen ${request.fen}`);
       const go = request.movetimeMs ? `go movetime ${request.movetimeMs}` : `go depth ${request.depth ?? 18}`;
       const bestLinePromise = this.waitFor((line) => {
@@ -69,6 +70,14 @@ export class StockfishClient implements ChessEngine {
         if (info) {
           const prior = lines.get(info.multipv);
           if (!prior || info.depth >= prior.depth) lines.set(info.multipv, info);
+          request.onProgress?.({
+            positionIndex: request.positionIndex ?? 0,
+            currentDepth: info.depth,
+            targetDepth: request.depth ?? info.depth,
+            nodes: info.nodes,
+            nps: info.nps,
+            multipv: info.multipv,
+          });
         }
         return line.startsWith("bestmove ");
       }, this.analysisTimeoutMs, "Stockfish analysis timed out.");

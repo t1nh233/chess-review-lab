@@ -21,6 +21,8 @@ export function parseInfoLine(line: string): ParsedInfo | null {
     depth,
     scoreCp: cpIndex >= 0 ? Number(tokens[cpIndex + 1]) : undefined,
     mate: mateIndex >= 0 ? Number(tokens[mateIndex + 1]) : undefined,
+    nodes: numberAfter("nodes"),
+    nps: numberAfter("nps"),
     moves: tokens.slice(pvIndex + 1),
   };
 }
