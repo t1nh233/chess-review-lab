@@ -1,7 +1,7 @@
 import "fake-indexeddb/auto";
 import { describe, expect, it } from "vitest";
 import type { GameReview } from "../../src/analysis/analysisTypes";
-import { deleteCachedReview, listCachedReviews, saveCachedReview, type CachedReview } from "../../src/storage/analysisCache";
+import { deleteCachedReview, getCachedReview, listCachedReviews, saveCachedReview, type CachedReview } from "../../src/storage/analysisCache";
 
 describe("IndexedDB analysis cache", () => {
   it("saves, lists, applies retention, and deletes review records", async () => {
@@ -24,6 +24,7 @@ describe("IndexedDB analysis cache", () => {
     const listed = await listCachedReviews();
     expect(listed.some((entry) => entry.analysisId === ids[0])).toBe(false);
     expect(listed.some((entry) => entry.analysisId === ids[1])).toBe(true);
+    expect((await getCachedReview(ids[1]))?.analysisId).toBe(ids[1]);
     await deleteCachedReview(ids[1]);
     expect((await listCachedReviews()).some((entry) => entry.analysisId === ids[1])).toBe(false);
   });

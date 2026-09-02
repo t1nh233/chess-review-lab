@@ -14,7 +14,7 @@ import { SettingsPanel } from "../components/SettingsPanel";
 import { ANALYSIS_MODEL_VERSION, CLASSIFIER_VERSION, ENGINE_VERSION, EXPECTED_POINTS_MODEL_VERSION } from "../config/versions";
 import { StockfishClient } from "../engine/stockfishClient";
 import type { GameSafetyState } from "../safety/liveGameGuard";
-import { deleteCachedReview, findCachedReview, listCachedReviews, saveCachedReview, type CachedReview } from "../storage/analysisCache";
+import { deleteCachedReview, findCachedReview, getCachedReview, listCachedReviews, saveCachedReview, type CachedReview } from "../storage/analysisCache";
 import { DEFAULT_SETTINGS, getSettings, saveSettings, type Settings } from "../storage/settings";
 import { initialReviewView, type ReviewView } from "./navigation";
 import { shouldLoadReviewToken } from "./reviewSession";
@@ -36,6 +36,7 @@ export function ReviewApp() {
   const [cached, setCached] = useState<CachedReview[]>([]);
   const activeAbort = useRef<AbortController | null>(null);
   const loadedToken = useRef<string | null>(null);
+  const loadedAnalysisId = useRef<string | null>(null);
   const runSequence = useRef(0);
   const lazyEngine = useRef<StockfishClient | null>(null);
   const lazyAbort = useRef<AbortController | null>(null);
@@ -112,6 +113,15 @@ export function ReviewApp() {
     loadedToken.current = token;
     void loadToken(token!);
   }, [loadToken, settingsLoaded]);
+  useEffect(() => {
+    const analysisId = new URLSearchParams(location.search).get("analysisId");
+    if (!analysisId || loadedAnalysisId.current === analysisId) return;
+    loadedAnalysisId.current = analysisId;
+    void getCachedReview(analysisId).then((cachedReview) => {
+      if (!cachedReview) { setError("This completed analysis is not available in local storage."); return; }
+      setReview(cachedReview.results); setSelectedPly(0); setView("review");
+    });
+  }, []);
 
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {

@@ -39,7 +39,7 @@ for (const [size, icon] of Object.entries(manifest.icons ?? {})) {
 }
 for (const script of manifest.content_scripts ?? []) for (const file of script.js ?? []) requireFile(file);
 for (const required of [
-  "review.html", "engine/stockfishWorker.js", "engine/stockfish-18-lite-single.js",
+  "review.html", "offscreen.html", "engine/stockfishWorker.js", "engine/stockfish-18-lite-single.js",
   "engine/stockfish-18-lite-single.wasm", "engine/COPYING.txt", "LICENSES_THIRD_PARTY.md",
   "licenses/chess.js-BSD-2-Clause.txt", "licenses/idb-ISC.txt", "licenses/lucide-react-ISC.txt",
   "licenses/react-MIT.txt", "licenses/react-dom-MIT.txt", "licenses/scheduler-MIT.txt",
@@ -48,7 +48,7 @@ if (fs.existsSync(path.join(root, "engine/stockfish-18-single.wasm")) || fs.exis
   failures.push("Obsolete full Stockfish artifacts must not be included with the lite release build.");
 }
 
-for (const htmlName of [manifest.action?.default_popup, "review.html"].filter(Boolean)) {
+for (const htmlName of [manifest.action?.default_popup, "review.html", "offscreen.html"].filter(Boolean)) {
   const html = fs.readFileSync(path.join(root, htmlName), "utf8");
   for (const match of html.matchAll(/<script[^>]+src=["']([^"']+)["']/gi)) {
     if (/^(?:https?:)?\/\//i.test(match[1])) failures.push(`Remote script in ${htmlName}: ${match[1]}`);

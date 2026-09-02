@@ -41,6 +41,7 @@ export default defineConfig({
     rollupOptions: {
       input: {
         popup: resolve("popup.html"),
+        offscreen: resolve("offscreen.html"),
         review: resolve("review.html"),
         background: resolve("src/background/serviceWorker.ts"),
         content: resolve("src/content/chessComContentScript.ts"),

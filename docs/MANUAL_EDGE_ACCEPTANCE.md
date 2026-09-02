@@ -66,7 +66,7 @@ Expected:
 - Board navigation and move selection are correct.
 - Home/End and Left/Right keys select the correct ply.
 
-Result: **NOT RUN**  
+Result: **NOT RUN**
 Evidence: ________________________________________________
 
 ## Test C — Engine and incremental analysis
@@ -240,6 +240,26 @@ Expected: both local export forms work; annotations remain human-readable; re-im
 Result: **NOT RUN**
 Evidence: ________________________________________________
 
+## Test M — Popup-first review lifecycle
+
+- [ ] Start completed-game analysis from the popup.
+- [ ] Progress is visible with current ply, total plies, real engine depth, and engine name.
+- [ ] Close the popup while analysis is running.
+- [ ] Reopen the popup.
+- [ ] Analysis did not restart from the first position.
+- [ ] Current progress was restored.
+- [ ] Final White Estimated Accuracy is displayed.
+- [ ] Final Black Estimated Accuracy is displayed.
+- [ ] Every move has one of the six simplified Vietnamese classifications.
+- [ ] White and Black moves with the same move number appear on one row.
+- [ ] No full chessboard or evaluation graph is rendered in the popup.
+- [ ] **Xem phân tích sâu** opens the dedicated review tab.
+- [ ] Deep Review loads the same analysis ID and does not start a fresh full-game run.
+- [ ] Clean PGN and Analysis PGN export still work from the available review UI.
+
+Result: **NOT RUN**
+Evidence: ________________________________________________
+
 ## Acceptance summary
 
 Installation: **NOT RUN**  
@@ -255,5 +275,6 @@ Completed Chess.com game: **NOT RUN**
 Runtime consoles: **NOT RUN**
 Progressive performance: **NOT RUN**
 PGN export: **NOT RUN**
+Popup-first lifecycle: **NOT RUN**
 
 Overall manual acceptance: **NOT RUN**

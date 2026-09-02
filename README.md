@@ -31,7 +31,11 @@ The domain layer is independent of React:
 - `src/components/`, `src/review/`, `src/popup/`: original review and popup interfaces
 - `tests/unit/`, `tests/integration/`, `tests/fixtures/`: deterministic tests and golden PGNs
 
-The review page owns the engine client. The client creates a module worker, which creates the locally packaged Stockfish worker. Expensive search never executes on the UI thread. Visiting Chess.com alone never starts the engine.
+The toolbar popup is the primary lightweight review client. Durable work follows `popup -> service worker coordinator -> offscreen document -> Stockfish Web Worker`, so closing the popup does not cancel or restart an authorized analysis. The popup reconnects to a compact session summary; the full review is persisted by analysis ID and opened only when **Xem phân tích sâu** is requested.
+
+The popup intentionally presents six Vietnamese labels. Internally the richer `best` / `excellent` / `good` / `inaccuracy` / `mistake` / `blunder` model, engine rank, Expected Points loss, evidence, and tags remain unchanged for deep review and compatibility work. Presentation precedence is Brilliant, Great, Blunder, Missed Opportunity, Mistake/Inaccuracy, then Best/Excellent/Good. Consequently, the displayed **Tốt nhất** tier is a compact quality grouping and does not claim every such move was Stockfish PV1.
+
+The offscreen host owns the engine client for popup-started analysis. The client creates a module worker, which creates the locally packaged Stockfish worker. Expensive search never executes on the UI thread. Visiting Chess.com alone never starts the engine.
 
 ## Development
 

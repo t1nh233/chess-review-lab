@@ -3,7 +3,7 @@
   "name": "Chess Review Lab",
   "version": "1.0.0",
   "description": "Local, fair-play-safe post-game chess review with Stockfish 18.",
-  "permissions": ["activeTab", "storage"],
+  "permissions": ["activeTab", "storage", "offscreen"],
   "host_permissions": ["https://www.chess.com/*"],
   "background": { "service_worker": "background/serviceWorker.js", "type": "module" },
   "action": { "default_popup": "popup.html", "default_title": "Chess Review Lab", "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" } },

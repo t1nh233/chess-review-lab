@@ -38,4 +38,5 @@ export async function saveCachedReview(review: CachedReview, maximum = 20): Prom
   await Promise.all(all.slice(maximum).map((entry) => database.delete("reviews", entry.analysisId)));
 }
 export async function listCachedReviews(): Promise<CachedReview[]> { return (await (await db()).getAll("reviews")).sort((a, b) => b.createdAt - a.createdAt); }
+export async function getCachedReview(analysisId: string): Promise<CachedReview | undefined> { return (await db()).get("reviews", analysisId); }
 export async function deleteCachedReview(id: string): Promise<void> { await (await db()).delete("reviews", id); }
