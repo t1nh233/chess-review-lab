@@ -19,6 +19,7 @@ import { DEFAULT_SETTINGS, getSettings, saveSettings, type Settings } from "../s
 import { initialReviewView, type ReviewView } from "./navigation";
 import { shouldLoadReviewToken } from "./reviewSession";
 import { debugLog } from "../utils/logger";
+import { getReviewSelection, keyboardSelectedPly } from "./selection";
 
 interface Payload { pgn: string; safetyState: GameSafetyState }
 
@@ -127,13 +128,11 @@ export function ReviewApp() {
   useEffect(() => {
     const handle = (event: KeyboardEvent) => {
       if (!review || ["INPUT", "TEXTAREA", "SELECT"].includes((event.target as HTMLElement).tagName)) return;
-      if (event.key === "ArrowLeft") setSelectedPly((value) => Math.max(0, value - 1));
-      if (event.key === "ArrowRight") setSelectedPly((value) => Math.min(review.moves.length, value + 1));
-      if (event.key === "Home") setSelectedPly(0);
-      if (event.key === "End") setSelectedPly(review.moves.length);
+      const next = keyboardSelectedPly(selectedPly, event.key, review.moves.length);
+      if (next !== undefined) setSelectedPly(next);
     };
     addEventListener("keydown", handle); return () => removeEventListener("keydown", handle);
-  }, [review]);
+  }, [review, selectedPly]);
 
   useEffect(() => {
     if (!review || !selectedPly || progress) return;
@@ -174,8 +173,9 @@ export function ReviewApp() {
     catch (caught) { setError(caught instanceof Error ? caught.message : "This PGN could not be parsed."); }
   };
   const updateSettings = (next: Settings) => { setSettings(next); void saveSettings(next); };
-  const currentFen = review ? (selectedPly === 0 ? review.game.startingFen : review.moves[selectedPly - 1].fenAfter) : "8/8/8/8/8/8/8/8 w - - 0 1";
-  const selectedMove = review && selectedPly > 0 ? review.moves[selectedPly - 1] : undefined;
+  const selection = review ? getReviewSelection(review, selectedPly) : undefined;
+  const currentFen = selection?.currentFen ?? "8/8/8/8/8/8/8/8 w - - 0 1";
+  const selectedMove = selection?.selectedMove;
   selectedPlyRef.current = selectedPly;
   const effectiveOrientation = settings.boardOrientation === "auto" ? orientation : settings.boardOrientation;
 

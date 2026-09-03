@@ -1,6 +1,7 @@
 import type { GameReview } from "../analysis/analysisTypes";
 import { toDisplayClassification, type DisplayClassification } from "./displayClassification";
 import type { AnalysisPhase } from "../analysis/analysisPerformance";
+import { groupMovesByNumber, type FullMoveRow as SharedFullMoveRow } from "../chess/fullMoveRows";
 
 export type ReviewSummaryStatus = "queued" | "analyzing" | "completed" | "cancelled" | "failed";
 export interface ReviewSummaryMove {
@@ -53,13 +54,7 @@ export function completedReviewSummary(analysisId: string, review: GameReview): 
   };
 }
 
-export interface FullMoveRow { moveNumber: number; white?: ReviewSummaryMove; black?: ReviewSummaryMove }
+export type FullMoveRow = SharedFullMoveRow<ReviewSummaryMove>;
 export function groupSummaryMoves(moves: ReviewSummaryMove[]): FullMoveRow[] {
-  const rows = new Map<number, FullMoveRow>();
-  for (const move of moves) {
-    const row = rows.get(move.moveNumber) ?? { moveNumber: move.moveNumber };
-    row[move.color] = move;
-    rows.set(move.moveNumber, row);
-  }
-  return [...rows.values()].sort((a, b) => a.moveNumber - b.moveNumber);
+  return groupMovesByNumber(moves);
 }
