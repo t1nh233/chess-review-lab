@@ -1,15 +1,8 @@
 import type { MoveReview } from "../analysis/analysisTypes";
+import type { DisplayClassification } from "../presentation/displayClassification";
 
-export type DisplayClassification = "brilliant" | "great" | "best" | "mistake" | "miss" | "blunder";
-
-export const DISPLAY_CLASSIFICATION_LABELS: Record<DisplayClassification, string> = {
-  brilliant: "Thiên tài",
-  great: "Tuyệt",
-  best: "Tốt nhất",
-  mistake: "Sai lầm",
-  miss: "Bỏ lỡ",
-  blunder: "Nước sai lầm ngớ ngẩn",
-};
+export type { DisplayClassification } from "../presentation/displayClassification";
+export { DISPLAY_CLASSIFICATION_LABELS, DISPLAY_CLASSIFICATION_META } from "../presentation/displayClassification";
 
 export function toDisplayClassification(move: Pick<MoveReview, "primaryClassification" | "tags">): DisplayClassification {
   if (move.primaryClassification === "brilliant") return "brilliant";

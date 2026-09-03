@@ -30,6 +30,24 @@ describe("popup-first review summary", () => {
     const finalRow = within(table).getAllByRole("row")[59]; expect(within(finalRow).getByText("59")).toBeInTheDocument(); expect(within(finalRow).getByText("Kg1")).toBeInTheDocument(); expect(within(finalRow).getByText("Qg2#")).toBeInTheDocument();
     expect(screen.queryByLabelText(/chessboard/i)).not.toBeInTheDocument(); expect(screen.queryByLabelText(/evaluation graph/i)).not.toBeInTheDocument();
   });
+  it("renders a shared six-row White/Black classification summary with correct counts", () => {
+    const categories = ["brilliant", "great", "best", "mistake", "miss", "blunder"] as const;
+    const summary = completed();
+    summary.moves = categories.flatMap((displayClassification, index) => ([
+      { ply: index * 2 + 1, moveNumber: index + 1, color: "white" as const, san: `w${index + 1}`, displayClassification },
+      { ply: index * 2 + 2, moveNumber: index + 1, color: "black" as const, san: `b${index + 1}`, displayClassification },
+    ]));
+    render(<PopupSummaryView summary={summary} onCancel={vi.fn()} onDeep={vi.fn()}/>);
+    const table = screen.getByRole("table", { name: "Classification summary" });
+    expect(within(table).getAllByRole("row")).toHaveLength(8);
+    expect(within(table).getByText("White Player")).toBeInTheDocument();
+    expect(within(table).getByText("Black Player")).toBeInTheDocument();
+    for (const category of categories) {
+      const row = table.querySelector(`tr[data-classification="${category}"]`);
+      expect(row).not.toBeNull();
+      expect(within(row as HTMLElement).getAllByRole("cell").map((cell) => cell.textContent)).toEqual(["1", "1"]);
+    }
+  });
   it("opens deep analysis using only the analysis identifier", () => {
     const onDeep = vi.fn(); render(<PopupSummaryView summary={completed()} onCancel={vi.fn()} onDeep={onDeep}/>);
     fireEvent.click(screen.getByRole("button", { name: "Xem phân tích sâu" })); expect(onDeep).toHaveBeenCalledWith("analysis-123");

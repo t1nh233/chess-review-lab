@@ -1,0 +1,148 @@
+:root {
+  color-scheme: dark;
+  --background: #090d13;
+  --background-raised: #0d131c;
+  --panel: #121a25;
+  --panel-raised: #182231;
+  --panel-soft: #1d2938;
+  --divider: #2b3949;
+  --text: #f3f7fb;
+  --text-muted: #9aabba;
+  --hover: #223144;
+  --selected: #253d4c;
+  --focus: #72d4ff;
+  --accent: #52d3ad;
+  --accent-strong: #2eb98e;
+  --warning: #f1ad55;
+  --danger: #ff6969;
+  --classification-brilliant: #42ddd4;
+  --classification-great: #62a9ff;
+  --classification-best: #63d47f;
+  --classification-mistake: #f2a74b;
+  --classification-miss: #ff805f;
+  --classification-blunder: #ff5e66;
+  --ink: var(--text);
+  --muted: var(--text-muted);
+  --line: var(--divider);
+  --paper: var(--panel);
+  --charcoal: #0c121a;
+  --mint: var(--accent);
+  --mint-dark: var(--accent-strong);
+  --amber: var(--warning);
+  color: var(--text);
+  background: var(--background);
+}
+
+body { background: var(--background); color: var(--text); }
+button, select, textarea, input { color: var(--text); }
+button:focus-visible, select:focus-visible, textarea:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.topbar, .popup header { background: var(--charcoal); border-bottom-color: var(--accent); }
+.brand-mark { background: var(--accent); color: #07110e; }
+.topbar nav button { color: var(--text-muted); }
+.topbar nav button.active { color: var(--text); border-bottom-color: var(--accent); }
+.review-column, .popup { background: var(--background-raised); }
+.board-column { background: #0d141c; border-color: var(--divider); }
+.review-panels, .move-list, .analysis-panel, .summary, .settings-panel, .previous-list,
+.progress-overlay > div, .export-menu, .popup-moves, .popup footer {
+  background: var(--panel);
+  border-color: var(--divider);
+}
+.deep-move-header, .popup-move-header { background: #101923; color: var(--text-muted); }
+.deep-move-row, .popup-move-row > *, .count-row { border-color: var(--divider); }
+.move:hover, .popup footer button:hover, .critical-links button:hover { background: var(--hover); color: var(--text); }
+.move.selected { background: var(--selected); border-left-color: var(--accent); }
+.game-title .result { background: #17342c; color: #8ee8ca; }
+.analysis-panel > p, .summary > p, .import-view section > p, .import-view aside p { color: var(--text-muted); }
+.metrics { background: var(--divider); border-color: var(--divider); }
+.metrics div, .secondary, .export-menu button, .progress-overlay button { background: var(--panel-raised); }
+.pv code, .critical-links button { background: var(--panel-soft); color: var(--text); }
+.pgn-input textarea, .popup-import textarea, .settings-panel select, .file-picker {
+  background: var(--panel);
+  color: var(--text);
+  border-color: var(--divider);
+}
+.chart-wrap { background: var(--panel); border-color: var(--divider); }
+.chart-zero { stroke: #526174; }
+.chart-point { fill: var(--panel); stroke: var(--accent); }
+.chart-point.active { fill: var(--warning); stroke: #fff1cb; }
+.error-banner { background: #3a1c22; color: #ffb7b7; border-color: #71333b; }
+.popup-error { color: #ff9494; }
+
+.classification-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  color: var(--classification-color);
+  overflow: visible;
+}
+.classification-icon rect {
+  fill: color-mix(in srgb, var(--classification-color) 17%, var(--panel));
+  stroke: currentColor;
+  stroke-width: 1.5;
+}
+.classification-icon text {
+  fill: currentColor;
+  font-family: "Segoe UI Symbol", "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: -1px;
+}
+.classification-icon-best text, .classification-icon-miss text { font-size: 12px; letter-spacing: 0; }
+.display-classification {
+  --classification-color: var(--text-muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  color: var(--classification-color);
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.display-classification-brilliant { --classification-color: var(--classification-brilliant); }
+.display-classification-great { --classification-color: var(--classification-great); }
+.display-classification-best { --classification-color: var(--classification-best); }
+.display-classification-mistake { --classification-color: var(--classification-mistake); }
+.display-classification-miss { --classification-color: var(--classification-miss); }
+.display-classification-blunder { --classification-color: var(--classification-blunder); }
+.display-classification.compact { width: 22px; justify-content: center; }
+
+.classification-summary {
+  width: 100%;
+  margin: 14px 0 18px;
+  border: 1px solid var(--divider);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--panel);
+  font-size: 12px;
+}
+.classification-summary th, .classification-summary td { padding: 8px 10px; border-top: 1px solid var(--divider); }
+.classification-summary thead th { border-top: 0; background: var(--panel-raised); text-align: center; }
+.classification-summary thead th:first-child { text-align: left; }
+.classification-summary thead th span { display: block; color: var(--text-muted); font-size: 9px; text-transform: uppercase; letter-spacing: .08em; }
+.classification-summary tbody th { display: flex; align-items: center; gap: 8px; text-align: left; font-weight: 700; }
+.classification-summary tbody td { width: 22%; text-align: center; font-variant-numeric: tabular-nums; font-weight: 800; }
+.classification-summary .accuracy-row th { color: var(--text-muted); }
+.classification-summary .accuracy-row td { color: var(--text); font-size: 19px; }
+.classification-summary tbody tr:hover { background: var(--hover); }
+.sr-only { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+.popup-summary { background: var(--background-raised); }
+.popup-summary progress { accent-color: var(--accent); }
+.popup-summary .classification-summary { margin: 2px 0 8px; font-size: 10px; }
+.popup-summary .classification-summary th, .popup-summary .classification-summary td { padding: 5px 6px; }
+.popup-summary .classification-summary .classification-icon { width: 17px; height: 17px; flex-basis: 17px; }
+.popup-move-row > span { display: grid; grid-template-columns: minmax(0, 1fr) 22px; align-items: center; gap: 4px; }
+.popup-move-row > span > strong { overflow: hidden; text-overflow: ellipsis; }
+.popup-move-row:nth-child(even) { background: color-mix(in srgb, var(--panel-raised) 48%, transparent); }
+.deep-move-header { box-shadow: 0 1px 0 var(--divider); }
+
+@media (prefers-reduced-motion: no-preference) {
+  button, .move, .classification-summary tbody tr { transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease; }
+}

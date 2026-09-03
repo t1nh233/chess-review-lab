@@ -10,4 +10,26 @@ describe("accuracy", () => {
     expect(result).toBeGreaterThanOrEqual(0);
     expect(result).toBeLessThanOrEqual(100);
   });
+  it("penalizes a Blunder more than a small Inaccuracy", () => {
+    expect(moveAccuracy(0.25, 0.5).raw).toBeLessThan(moveAccuracy(0.06, 0.5).raw);
+  });
+  it("reduces the aggregate distortion of trivial forced moves", () => {
+    const ordinary = moveAccuracy(0, 0.3, { forced: false });
+    const forced = moveAccuracy(0, 0.3, { forced: true });
+    expect(forced.raw).toBe(ordinary.raw);
+    expect(forced.weight).toBeLessThan(ordinary.weight);
+  });
+  it("downweights harmless shuffling in already-decided positions", () => {
+    const balanced = moveAccuracy(0, 0.2, { decidedness: 0 });
+    const decided = moveAccuracy(0, 0.2, { decidedness: 0.95 });
+    expect(decided.weight).toBeLessThan(balanced.weight);
+  });
+  it("applies a meaningful mate-transition penalty", () => {
+    expect(moveAccuracy(0.02, 0.6, { mateLoss: true }).raw).toBeLessThan(moveAccuracy(0.02, 0.6).raw);
+  });
+  it("uses explainable error-sensitive aggregation rather than equal averaging", () => {
+    const smallError = gameAccuracy([{ estimatedAccuracy: 95, accuracyWeight: 1 }, { estimatedAccuracy: 100, accuracyWeight: 1 }]);
+    const blunder = gameAccuracy([{ estimatedAccuracy: 20, accuracyWeight: 1 }, { estimatedAccuracy: 100, accuracyWeight: 1 }]);
+    expect(blunder).toBeLessThan(smallError);
+  });
 });

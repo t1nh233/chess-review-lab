@@ -3,7 +3,8 @@ import { FileUp, FolderOpen, Search, Settings, Square } from "lucide-react";
 import type { ChessComPageSnapshot } from "../adapters/chessCom/pageAdapter";
 import { parsePgn } from "../chess/pgn";
 import type { GameSafetyState } from "../safety/liveGameGuard";
-import { DISPLAY_CLASSIFICATION_LABELS } from "./displayClassification";
+import { ClassificationSummary } from "../components/ClassificationSummary";
+import { DisplayClassificationBadge } from "../presentation/classificationIcons";
 import { groupSummaryMoves, type ReviewSummary } from "./reviewSummary";
 
 type PageState = "loading" | "unsupported" | "completed" | "live" | "unknown" | "extraction_failed";
@@ -24,8 +25,8 @@ export function PopupSummaryView({ summary, onCancel, onDeep }: { summary: Revie
   </main>;
   if (summary.status === "completed") return <main className="popup-summary completed-summary">
     <h1>{summary.whiteName} <small>vs</small> {summary.blackName}</h1>
-    <div className="popup-accuracy"><div><strong>{summary.whiteAccuracy?.toFixed(1)}</strong><span>White Estimated Accuracy</span></div><div><strong>{summary.blackAccuracy?.toFixed(1)}</strong><span>Black Estimated Accuracy</span></div></div>
-    <div className="popup-moves" role="table" aria-label="Move classifications"><div className="popup-move-header" role="row"><b>#</b><b>White</b><b>Black</b></div>{rows.map((row) => <div className="popup-move-row" role="row" key={row.moveNumber}><b>{row.moveNumber}</b>{([row.white, row.black]).map((move, index) => <span role="cell" key={move?.ply ?? `${row.moveNumber}-${index}`}>{move ? <>{move.san}<small>{DISPLAY_CLASSIFICATION_LABELS[move.displayClassification]}</small></> : "—"}</span>)}</div>)}</div>
+    <ClassificationSummary whiteName={summary.whiteName} blackName={summary.blackName} whiteAccuracy={summary.whiteAccuracy} blackAccuracy={summary.blackAccuracy} moves={summary.moves}/>
+    <div className="popup-moves" role="table" aria-label="Move classifications"><div className="popup-move-header" role="row"><b>#</b><b>White</b><b>Black</b></div>{rows.map((row) => <div className="popup-move-row" role="row" key={row.moveNumber}><b>{row.moveNumber}</b>{([row.white, row.black]).map((move, index) => <span role="cell" key={move?.ply ?? `${row.moveNumber}-${index}`}>{move ? <><strong>{move.san}</strong><DisplayClassificationBadge classification={move.displayClassification} compact/></> : "—"}</span>)}</div>)}</div>
     <button className="primary wide" onClick={() => onDeep(summary.analysisId)}>Xem phân tích sâu</button>
   </main>;
   return <main className="popup-summary"><h1>{summary.status === "cancelled" ? "Analysis cancelled" : "Analysis failed"}</h1><p>{summary.error ?? "You can start the review again."}</p></main>;

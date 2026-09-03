@@ -3,4 +3,5 @@ import { createRoot } from "react-dom/client";
 import { Popup } from "./Popup";
 import "../styles.css";
 import "./popup.css";
+import "../theme.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><Popup/></StrictMode>);

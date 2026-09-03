@@ -15,6 +15,9 @@ export interface PositionReview {
 export interface ClassificationEvidence {
   expectedPointsBefore: number; expectedPointsAfter: number; expectedPointsLoss: number;
   engineRank?: number; evalLossCp?: number; bestVsSecondGap?: number; materialDelta?: number;
+  ratingUsed?: number; evalBefore?: NormalizedEval; evalAfter?: NormalizedEval; criticality?: number;
+  moveAccuracy?: number; gameAccuracyWeight?: number;
+  mateState?: { before?: number; after?: number; transition: "none" | "delivered" | "allowed" | "continued" };
   reasons: string[];
 }
 export interface MoveReview {

@@ -51,6 +51,12 @@ describe("analysis pipeline", () => {
       expectedPointsLoss: expect.any(Number),
       reasons: expect.any(Array),
     });
+    expect(review.moves[0].evidence.ratingUsed).toBe(1600);
+    expect(review.moves[1].evidence.ratingUsed).toBe(1550);
+    expect(review.moves[0].evidence).toMatchObject({
+      evalBefore: expect.any(Object), evalAfter: expect.any(Object), criticality: expect.any(Number),
+      moveAccuracy: expect.any(Number), gameAccuracyWeight: expect.any(Number), mateState: expect.any(Object),
+    });
     expect(() => JSON.stringify(review)).not.toThrow();
     expect(review.summary.largestMistakePly).toBeGreaterThan(0);
   });
@@ -130,6 +136,7 @@ describe("analysis pipeline", () => {
     const review = await analyzeGame(game, engine, { safetyState: "SAFE_IMPORTED_PGN", preset: "quick" });
     expect(review.moves[0]).toMatchObject({ moveNumber: 59, color: "black", san: "Qg2#" });
     expect(review.moves[0].tags).toEqual(expect.arrayContaining(["mate", "game_ending"]));
+    expect(review.moves[0].evidence.mateState).toMatchObject({ transition: "delivered", after: 1 });
     expect(engine.analyze.mock.calls.every(([request]) => request.fen !== game.moves[0].fenAfter)).toBe(true);
   });
 

@@ -1,5 +1,6 @@
 import type { GameReview } from "../analysis/analysisTypes";
-import { CLASS_LABELS } from "./classificationLabels";
+import { toDisplayClassification } from "../popup/displayClassification";
+import { ClassificationSummary } from "./ClassificationSummary";
 import { ExportPgn } from "./ExportPgn";
 export function GameSummary({ review, onSelect }: { review: GameReview; onSelect: (ply: number) => void }) {
   const moveButton = (ply: number) => {
@@ -11,8 +12,13 @@ export function GameSummary({ review, onSelect }: { review: GameReview; onSelect
     <h2>Game summary</h2>
     <ExportPgn review={review}/>
     <p>{review.summary.headline}</p>
-    <div className="accuracy-pair"><div><strong>{review.whiteAccuracy.toFixed(1)}</strong><span>White estimated accuracy</span></div><div><strong>{review.blackAccuracy.toFixed(1)}</strong><span>Black estimated accuracy</span></div></div>
-    <div className="summary-grid">{(["white", "black"] as const).map((color) => <div key={color}><h3>{color}</h3>{Object.entries(review.summary.counts[color]).filter(([, count]) => count > 0).map(([name, count]) => <div className="count-row" key={name}><span>{CLASS_LABELS[name as keyof typeof CLASS_LABELS]}</span><strong>{count}</strong></div>)}</div>)}</div>
+    <ClassificationSummary
+      whiteName={review.game.headers.White ?? "White"}
+      blackName={review.game.headers.Black ?? "Black"}
+      whiteAccuracy={review.whiteAccuracy}
+      blackAccuracy={review.blackAccuracy}
+      moves={review.moves.map((move) => ({ color: move.color, displayClassification: toDisplayClassification(move) }))}
+    />
     <h3>Largest mistake</h3>
     <div className="critical-links">{review.summary.largestMistakePly ? moveButton(review.summary.largestMistakePly) : <span>None identified</span>}</div>
     <h3>Critical moments</h3>

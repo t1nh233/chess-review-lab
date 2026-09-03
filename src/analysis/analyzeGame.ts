@@ -11,7 +11,7 @@ import { detectBrilliantMove } from "./brilliant";
 import { calculateCriticality } from "./criticalMoments";
 import { lineEvaluationFromWhite, evalToCp } from "./evaluation";
 import { explainMove } from "./explanation";
-import { moverExpectedPoints } from "./expectedPoints";
+import { moverExpectedPoints, ratingForMover } from "./expectedPoints";
 import { detectGreatMove } from "./greatMove";
 import { detectMissedOpportunity } from "./missedOpportunity";
 import { classifyMove } from "./moveClassifier";
@@ -43,6 +43,11 @@ function moverCp(evaluation: NormalizedEval, color: "white" | "black"): number {
   return color === "white" ? cp : -cp;
 }
 
+function moverMate(evaluation: NormalizedEval, color: "white" | "black"): number | undefined {
+  if (evaluation.mate === undefined) return undefined;
+  return color === "white" ? evaluation.mate : -evaluation.mate;
+}
+
 function pvSacrifice(beforeFen: string, afterFen: string, pv: string[], color: "white" | "black"): { sacrifice: number; deficitPlies: number } {
   const initial = materialBalance(beforeFen) * (color === "white" ? 1 : -1);
   const chess = new Chess(afterFen);
@@ -71,7 +76,7 @@ function buildMoveReview(
   const move = game.moves[index];
   const before = positions[index];
   const after = positions[index + 1];
-  const rating = move.color === "white" ? game.whiteRating : game.blackRating;
+  const rating = ratingForMover(game, move.color);
   const epBefore = moverExpectedPoints(before.evaluation.white, move.color, rating);
   const epAfter = moverExpectedPoints(after.evaluation.white, move.color, rating);
   const epLoss = Math.max(0, epBefore - epAfter < 0.002 ? 0 : epBefore - epAfter);
@@ -104,7 +109,16 @@ function buildMoveReview(
   if (sacrifice.sacrifice >= 1.8) tags.push("sacrifice");
   if (after.evaluation.white.mate !== undefined) tags.push("mate");
   if (index === game.moves.length - 1) tags.push("game_ending");
-  const accuracy = moveAccuracy(epLoss, criticality);
+  const mateBefore = moverMate(before.evaluation.white, move.color);
+  const mateAfter = moverMate(after.evaluation.white, move.color);
+  const mateTransition = mateAfter !== undefined && mateAfter < 0 && (mateBefore === undefined || mateBefore >= 0)
+    ? "allowed" : mateAfter !== undefined && mateAfter > 0 && (mateBefore === undefined || mateBefore <= 0)
+      ? "delivered" : mateBefore !== undefined || mateAfter !== undefined ? "continued" : "none";
+  const accuracy = moveAccuracy(epLoss, criticality, {
+    forced: legalMoveCount === 1,
+    decidedness: Math.abs(epBefore - 0.5) * 2,
+    mateLoss: mateTransition === "allowed",
+  });
   return {
     ...move, evalBefore: before.evaluation.white, evalAfter: after.evaluation.white,
     expectedPointsBefore: epBefore, expectedPointsAfter: epAfter, expectedPointsLoss: epLoss,
@@ -113,7 +127,14 @@ function buildMoveReview(
     analysisDepth: Math.min(before.analysisDepth, after.analysisDepth),
     analysisStatus: before.analysisStatus === "final" && after.analysisStatus === "final" ? "final" : "provisional",
     explanation: explainMove(primary, tags),
-    evidence: { expectedPointsBefore: epBefore, expectedPointsAfter: epAfter, expectedPointsLoss: epLoss, engineRank, evalLossCp, bestVsSecondGap: uniquenessGap, materialDelta: immediateMaterial, reasons: [...brilliant.reasons, ...great.reasons] },
+    evidence: {
+      expectedPointsBefore: epBefore, expectedPointsAfter: epAfter, expectedPointsLoss: epLoss,
+      ratingUsed: rating, evalBefore: before.evaluation.white, evalAfter: after.evaluation.white,
+      criticality, moveAccuracy: accuracy.raw, gameAccuracyWeight: accuracy.weight,
+      mateState: { before: mateBefore, after: mateAfter, transition: mateTransition },
+      engineRank, evalLossCp, bestVsSecondGap: uniquenessGap, materialDelta: immediateMaterial,
+      reasons: [...brilliant.reasons, ...great.reasons],
+    },
   };
 }
 

@@ -7,6 +7,90 @@ Edge version: ____________________
 
 Use only completed historical games or imported PGNs for engine analysis. Never request engine analysis while playing a live rated or competitive game.
 
+## Required release acceptance checklist
+
+Use this checklist as the release decision record. Detailed procedures and evidence fields follow below. Do not mark an item PASS without observing it in Microsoft Edge desktop.
+
+### Installation
+
+- [ ] Open `edge://extensions`.
+- [ ] Enable **Developer mode**.
+- [ ] Select **Load unpacked** and choose the absolute `D:\chess_analys\dist` directory.
+- [ ] Confirm the extension loads with no manifest errors.
+
+### Popup
+
+- [ ] Completed-game analysis starts.
+- [ ] Analysis progress is visible.
+- [ ] Current real Stockfish depth is visible.
+- [ ] The popup may be closed during analysis.
+- [ ] Reopen the popup while analysis is running.
+- [ ] Analysis continues from current progress instead of restarting.
+- [ ] Final White Estimated Accuracy is shown.
+- [ ] Final Black Estimated Accuracy is shown.
+- [ ] All six Vietnamese classifications are shown: **Thiên tài**, **Tuyệt**, **Tốt nhất**, **Sai lầm**, **Bỏ lỡ**, and **Nước sai lầm ngớ ngẩn**.
+
+### Move list
+
+- [ ] White and Black moves with the same full-move number share one popup row.
+- [ ] Deep Review also uses one full-move row with separate White and Black cells.
+- [ ] The long fixture's final row is exactly `59 | Kg1 | Qg2#`.
+
+### Performance
+
+- [ ] The first useful review appears quickly.
+- [ ] There is no dramatic stall hidden behind misleading or fake linear progress.
+- [ ] The refinement phase is clearly identified.
+- [ ] The UI remains responsive during analysis.
+- [ ] Late positions do not produce false search timeouts while real UCI progress continues.
+
+### Deep Analysis
+
+- [ ] **Xem phân tích sâu** opens the dedicated Review page.
+- [ ] The same `analysisId` is reused.
+- [ ] Opening Deep Review does not rerun the full game.
+- [ ] Board display and ply navigation work.
+- [ ] Evaluation graph selection works.
+- [ ] Best move and principal variation display correctly.
+- [ ] Lazy continuation lines load for the selected position.
+
+### Summary UI
+
+- [ ] All six classification icons and semantic colors render correctly.
+- [ ] White and Black Estimated Accuracy values are correct for the completed review.
+- [ ] All six classification-count rows contain correct White and Black counts.
+
+### PGN export
+
+- [ ] Clean PGN copies to the clipboard.
+- [ ] Clean PGN downloads locally.
+- [ ] Analysis PGN copies to the clipboard.
+- [ ] Analysis PGN downloads locally.
+- [ ] Exported Analysis PGN re-imports successfully with the same mainline and result.
+- [ ] The final move `59...Qg2#` remains present after export and re-import.
+
+### Cache
+
+- [ ] A completed review can be reopened from Previous Reviews.
+- [ ] Reopening a compatible cached review does not unnecessarily rerun full analysis.
+
+### Safety
+
+- [ ] `LIVE_GAME` is blocked.
+- [ ] `UNKNOWN` is blocked.
+- [ ] No evaluation, best move, PV, classification, hint, or engine suggestion is visible on a live game.
+- [ ] Positively completed games and imported PGNs are allowed.
+
+### Console and resources
+
+- [ ] No uncaught exceptions appear in popup, Review page, offscreen document, or service-worker consoles.
+- [ ] No Stockfish WASM loading errors appear.
+- [ ] No Content Security Policy errors appear.
+- [ ] No missing manifest, icon, worker, script, stylesheet, or export resource errors appear.
+
+Checklist result: **NOT RUN**
+Evidence folder or notes: ________________________________________________
+
 ## Installation
 
 1. From `D:\chess_analys`, run `npm ci` and `npm run verify:release`.

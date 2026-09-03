@@ -97,7 +97,7 @@ Clean PGN preserves the immutable imported source. Analysis PGN preserves the ma
 
 ## Expected Points
 
-`expectedPoints()` is a bounded, monotonic logistic approximation: 0 means expected loss, 0.5 is roughly equal, and 1 means expected win. Mate maps near the appropriate endpoint. The configurable curve is centered at 0 cp and can vary modestly with player rating. Internal evaluations are always White-relative; Black mover values are `1 - EP_white`.
+`expectedPoints()` is a bounded, monotonic logistic approximation: 0 means expected loss, 0.5 is roughly equal, and 1 means expected win. Mate maps near the appropriate endpoint. The configurable curve uses the mover's own rating (`WhiteElo` for White and `BlackElo` for Black); a rating-aware practical floor keeps low-rating, strongly decided positions from collapsing to exact certainty. Internal evaluations are always White-relative; Black mover values are `1 - EP_white`.
 
 This is an independent local approximation. It is not Chess.com's private Expected Points mapping.
 
@@ -127,7 +127,7 @@ A Brilliant candidate must remain engine-approved while making a meaningful mate
 
 ## Estimated Accuracy
 
-Move accuracy is a deterministic exponential function of Expected Points loss, bounded to 0–100. Position criticality determines its weight in each side's game score: balanced, unique, swing-prone positions count more, while low-criticality positions count less. The UI deliberately calls this **Estimated Accuracy**.
+Move accuracy is a deterministic exponential function of Expected Points loss, bounded to 0–100, with explicit additional severity when a move newly allows mate. Position criticality determines its base weight; trivial forced moves and harmless play in already-decided positions are discounted. Game accuracy aggregates weighted error with a configurable power mean so one decisive mistake is not hidden by many routine moves. The UI deliberately calls this **Estimated Accuracy**.
 
 Expected Points, Estimated Accuracy, classification compatibility, Great, Brilliant, and Miss are transparent independent approximations. They do not reproduce Chess.com's private algorithms, CAPS2, labels, or accuracy values.
 
