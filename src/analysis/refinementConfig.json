@@ -1,0 +1,7 @@
+{
+  "classificationBoundaryMargin": 0.006,
+  "criticalityThreshold": 0.48,
+  "highCriticalityThreshold": 0.68,
+  "evaluationRangeCp": 70,
+  "highEvaluationRangeCp": 150
+}

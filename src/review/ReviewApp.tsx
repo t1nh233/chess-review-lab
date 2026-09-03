@@ -18,6 +18,7 @@ import { deleteCachedReview, findCachedReview, getCachedReview, listCachedReview
 import { DEFAULT_SETTINGS, getSettings, saveSettings, type Settings } from "../storage/settings";
 import { initialReviewView, type ReviewView } from "./navigation";
 import { shouldLoadReviewToken } from "./reviewSession";
+import { debugLog } from "../utils/logger";
 
 interface Payload { pgn: string; safetyState: GameSafetyState }
 
@@ -141,15 +142,19 @@ export function ReviewApp() {
     const runId = runSequence.current; const controller = new AbortController(); lazyAbort.current?.abort(); lazyAbort.current = controller;
     setReview((current) => current ? { ...current, moves: current.moves.map((move, moveIndex) => moveIndex === index ? { ...move, continuationsStatus: "loading" } : move) } : current);
     void (async () => {
+      const queuedAt = performance.now();
       try {
         const preset = ENGINE_PRESETS[settings.analysisQuality];
         const request = { fen: review.positions[index].fen, engineVersion: ENGINE_VERSION, engineMode: settings.analysisQuality, depth: preset.depth, multiPv: 3 };
         let result = positionCache.current.get(request);
+        const cacheState = result ? "hit" : "miss";
+        const searchStarted = performance.now();
         if (!result) {
           if (!lazyEngine.current) { lazyEngine.current = new StockfishClient(); await lazyEngine.current.initialize(reviewSafety.current); }
           result = await lazyEngine.current.analyze({ fen: request.fen, depth: request.depth, multiPv: 3, positionIndex: index }, controller.signal);
           positionCache.current.set(request, result);
         }
+        debugLog("analysis_search_timing", { phase: "lazyContinuation", positionIndex: index, targetDepth: request.depth, actualDepth: result.depth, multiPv: 3, queueWaitMs: searchStarted - queuedAt, engineSearchDurationMs: performance.now() - searchStarted, nodes: result.lines[0]?.nodes, nps: result.lines[0]?.nps, cache: cacheState });
         if (controller.signal.aborted || runSequence.current !== runId) return;
         setReview((current) => current ? { ...current,
           positions: current.positions.map((position, positionIndex) => positionIndex === index ? { ...position, bestMove: result!.bestMove, lines: result!.lines, analysisDepth: result!.depth } : position),

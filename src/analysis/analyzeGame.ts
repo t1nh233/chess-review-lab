@@ -16,11 +16,13 @@ import { detectGreatMove } from "./greatMove";
 import { detectMissedOpportunity } from "./missedOpportunity";
 import { classifyMove } from "./moveClassifier";
 import { PositionAnalysisCache } from "./positionAnalysisCache";
+import { shouldRefinePosition, type RefinementDecision } from "./refinementPolicy";
+import type { AnalysisPerformanceReport, AnalysisPhase, AnalysisSearchTiming } from "./analysisPerformance";
 
 export const ENGINE_PRESETS = {
-  quick: { label: "Fast Review", initialDepth: 10, depth: 16, expandedMultiPv: 3 },
-  balanced: { label: "Compatibility Review", initialDepth: 12, depth: 20, expandedMultiPv: 3 },
-  deep: { label: "Deep Review", initialDepth: 12, depth: 22, expandedMultiPv: 3 },
+  quick: { label: "Fast Review", initialDepth: 12, refinementDepth: 16, depth: 16, expandedMultiPv: 3 },
+  balanced: { label: "Compatibility Review", initialDepth: 12, refinementDepth: 18, depth: 20, expandedMultiPv: 3 },
+  deep: { label: "Deep Review", initialDepth: 14, refinementDepth: 20, depth: 22, expandedMultiPv: 3 },
 } as const;
 export type EnginePresetName = keyof typeof ENGINE_PRESETS;
 
@@ -32,6 +34,8 @@ export interface AnalyzeGameOptions {
   compatibilityClassifier?: boolean;
   positionCache?: PositionAnalysisCache;
   getPriorityPosition?: () => number;
+  onPhase?: (phase: AnalysisPhase) => void;
+  onPerformanceReport?: (report: AnalysisPerformanceReport) => void;
 }
 
 function moverCp(evaluation: NormalizedEval, color: "white" | "black"): number {
@@ -136,11 +140,13 @@ function buildGameReview(game: ParsedGame, moves: MoveReview[], positions: Posit
 export async function analyzeGame(game: ParsedGame, engine: ChessEngine, options: AnalyzeGameOptions): Promise<GameReview> {
   assertAnalysisAllowed(options.safetyState);
   const preset = ENGINE_PRESETS[options.preset];
+  const analysisStarted = performance.now();
   await engine.initialize(options.safetyState);
   const fens = [...game.moves.map((move) => move.fenBefore), game.moves.at(-1)!.fenAfter];
   const cache = options.positionCache ?? new PositionAnalysisCache();
-  const totalWork = fens.length * 2;
-  let completed = 0;
+  const jobs: AnalysisSearchTiming[] = [];
+  const phaseDurationMs: AnalysisPerformanceReport["phaseDurationMs"] = { quick: 0, refinement: 0, multiPvExpansion: 0, lazyContinuation: 0, finalizing: 0 };
+  const observations = fens.map(() => ({ bestByDepth: new Map<number, string>(), scoreByDepth: new Map<number, number>(), mateByDepth: new Map<number, string>() }));
 
   const terminalPosition = (fen: string, status: PositionReview["analysisStatus"]): PositionReview | undefined => {
     const board = new Chess(fen);
@@ -148,14 +154,30 @@ export async function analyzeGame(game: ParsedGame, engine: ChessEngine, options
     const evaluation: NormalizedEval = board.isCheckmate() ? { mate: board.turn() === "w" ? -1 : 1 } : { cp: 0 };
     return { fen, evaluation: { white: evaluation }, lines: [], analysisDepth: 0, analysisStatus: status };
   };
-  const search = async (fen: string, depth: number, multiPv: number, index: number): Promise<EngineAnalysisResult> => {
+  const search = async (fen: string, depth: number, multiPv: number, index: number, phase: AnalysisPhase, queuedAt = performance.now()): Promise<EngineAnalysisResult> => {
     const request = { fen, engineVersion: ENGINE_VERSION, engineMode: options.preset, depth, multiPv };
+    const searchStarted = performance.now();
     const cached = cache.get(request);
-    if (cached) return cached;
+    if (cached) {
+      jobs.push({ phase, positionIndex: index, ply: index, targetDepth: depth, actualDepth: cached.depth, multiPv, queueWaitMs: searchStarted - queuedAt, engineSearchDurationMs: 0, nodes: cached.lines[0]?.nodes, nps: cached.lines[0]?.nps, cache: "hit" });
+      return cached;
+    }
+    let finalProgress: EngineProgress | undefined;
     const result = await engine.analyze({
       fen, depth, multiPv, positionIndex: index,
-      onProgress: (progress) => options.onEngineProgress?.(progress),
+      onProgress: (progress) => {
+        finalProgress = progress;
+        if (phase === "quick" && progress.multipv === 1 && progress.currentDepth >= Math.max(6, preset.initialDepth - 4)) {
+          if (progress.bestMove) observations[index].bestByDepth.set(progress.currentDepth, progress.bestMove);
+          if (progress.scoreCp !== undefined) observations[index].scoreByDepth.set(progress.currentDepth, progress.scoreCp);
+          observations[index].mateByDepth.set(progress.currentDepth, progress.mate === undefined ? "cp" : `mate:${Math.sign(progress.mate)}`);
+        }
+        options.onEngineProgress?.(progress);
+      },
     }, options.signal);
+    const duration = performance.now() - searchStarted;
+    phaseDurationMs[phase] += duration;
+    jobs.push({ phase, positionIndex: index, ply: index, targetDepth: depth, actualDepth: result.depth, multiPv, queueWaitMs: searchStarted - queuedAt, engineSearchDurationMs: duration, nodes: finalProgress?.nodes ?? result.lines[0]?.nodes, nps: finalProgress?.nps ?? result.lines[0]?.nps, cache: "miss" });
     cache.set(request, result);
     return result;
   };
@@ -166,19 +188,73 @@ export async function analyzeGame(game: ParsedGame, engine: ChessEngine, options
 
   const positions: PositionReview[] = [];
   let moves: MoveReview[] = [];
+  options.onPhase?.("quick");
+  const quickQueuedAt = performance.now();
   for (let index = 0; index < fens.length; index += 1) {
     if (options.signal?.aborted) throw new DOMException("Analysis was cancelled.", "AbortError");
     const fen = fens[index];
     const terminal = terminalPosition(fen, "provisional");
-    positions.push(terminal ?? toPosition(fen, await search(fen, preset.initialDepth, 1, index), "provisional"));
-    completed += 1; options.onProgress?.(completed, totalWork);
+    positions.push(terminal ?? toPosition(fen, await search(fen, preset.initialDepth, 1, index, "quick", quickQueuedAt), "provisional"));
+    options.onProgress?.(index + 1, fens.length);
     if (index > 0) {
       moves.push(buildMoveReview(game, positions, moves, index - 1, options));
       options.onPartialReview?.(buildGameReview(game, [...moves], [...positions], options));
     }
   }
 
-  const remaining = new Set(fens.map((_, index) => index));
+  moves = [];
+  for (let index = 0; index < game.moves.length; index += 1) moves.push(buildMoveReview(game, positions, moves, index, options));
+  const decisions = new Map<number, RefinementDecision>();
+  const multiPvIndexes = new Set<number>();
+  for (let index = 0; index < moves.length; index += 1) {
+    const move = moves[index];
+    const legalMoveCount = new Chess(move.fenBefore).moves().length;
+    const beforeObservation = observations[index];
+    const afterObservation = observations[index + 1];
+    const latestValues = <T,>(values: Map<number, T>, count: number) => [...values.entries()].sort((a, b) => b[0] - a[0]).slice(0, count).map((entry) => entry[1]);
+    const observationRange = (values: Map<number, number>) => { const scores = latestValues(values, 3); return scores.length ? Math.max(...scores) - Math.min(...scores) : 0; };
+    const changedAtFinalDepths = <T,>(values: Map<number, T>) => new Set(latestValues(values, 2)).size > 1;
+    const evaluationRangeCp = Math.max(observationRange(beforeObservation.scoreByDepth), observationRange(afterObservation.scoreByDepth));
+    const tactical = /[x+#=]/.test(move.san);
+    const materialChange = moverMaterialDelta(move.fenBefore, move.fenAfter, move.color);
+    const nearBest = move.uci === positions[index].bestMove || (move.evidence.engineRank !== undefined && (move.evidence.evalLossCp ?? Infinity) <= 45);
+    const greatCandidate = legalMoveCount > 1 && nearBest && Math.abs(evalToCp(move.evalBefore)) <= 500
+      && (tactical || Math.abs(evalToCp(move.evalBefore) - evalToCp(move.evalAfter)) >= 80);
+    const brilliantCandidate = legalMoveCount > 1 && nearBest && materialChange <= -1.5;
+    const missCandidate = move.tags.includes("missed_opportunity");
+    const onlyMoveCandidate = legalMoveCount === 2 && nearBest && move.criticality >= 0.3;
+    const multiPvRequired = greatCandidate || brilliantCandidate || onlyMoveCandidate;
+    const decision = shouldRefinePosition({
+      expectedPointsLoss: move.expectedPointsLoss,
+      criticality: move.criticality,
+      bestMoveChanged: changedAtFinalDepths(beforeObservation.bestByDepth) || changedAtFinalDepths(afterObservation.bestByDepth),
+      evaluationRangeCp,
+      mateStatusChanged: changedAtFinalDepths(beforeObservation.mateByDepth) || changedAtFinalDepths(afterObservation.mateByDepth),
+      greatCandidate, brilliantCandidate, missCandidate, onlyMoveCandidate, multiPvRequired,
+    });
+    decisions.set(index, decision);
+    if (multiPvRequired && legalMoveCount > 1) multiPvIndexes.add(index);
+  }
+
+  const requestedDepths = new Map<number, number>();
+  const requestedAt = new Map<number, number>();
+  const requestPosition = (index: number, decision: RefinementDecision) => {
+    if (!decision.refine || new Chess(fens[index]).isGameOver()) return;
+    const depth = decision.level === "maximum" ? preset.depth : preset.refinementDepth;
+    requestedDepths.set(index, Math.max(requestedDepths.get(index) ?? 0, depth));
+    if (!requestedAt.has(index)) requestedAt.set(index, performance.now());
+  };
+  for (const [moveIndex, decision] of decisions) {
+    requestPosition(moveIndex, decision);
+    requestPosition(moveIndex + 1, decision);
+  }
+  for (let index = 0; index < positions.length; index += 1) {
+    if (!requestedDepths.has(index)) positions[index] = { ...positions[index], analysisStatus: "final" };
+  }
+
+  options.onPhase?.("refinement");
+  const remaining = new Set(requestedDepths.keys());
+  let refined = 0;
   while (remaining.size) {
     const priority = Math.max(0, Math.min(fens.length - 1, options.getPriorityPosition?.() ?? 0));
     const index = [...remaining].sort((a, b) => Math.abs(a - priority) - Math.abs(b - priority) || a - b)[0];
@@ -186,8 +262,9 @@ export async function analyzeGame(game: ParsedGame, engine: ChessEngine, options
     if (options.signal?.aborted) throw new DOMException("Analysis was cancelled.", "AbortError");
     const fen = fens[index];
     const terminal = terminalPosition(fen, "final");
-    positions[index] = terminal ?? toPosition(fen, await search(fen, preset.depth, 1, index), "final");
-    completed += 1; options.onProgress?.(completed, totalWork);
+    const targetDepth = requestedDepths.get(index) ?? preset.refinementDepth;
+    positions[index] = terminal ?? toPosition(fen, await search(fen, targetDepth, 1, index, "refinement", requestedAt.get(index)), "final");
+    refined += 1; options.onProgress?.(refined, requestedDepths.size);
     const refinedMoves: MoveReview[] = [];
     for (let moveIndex = 0; moveIndex < game.moves.length; moveIndex += 1) refinedMoves.push(buildMoveReview(game, positions, refinedMoves, moveIndex, options));
     options.onPartialReview?.(buildGameReview(game, refinedMoves, [...positions], options));
@@ -196,19 +273,34 @@ export async function analyzeGame(game: ParsedGame, engine: ChessEngine, options
   moves = [];
   for (let index = 0; index < game.moves.length; index += 1) moves.push(buildMoveReview(game, positions, moves, index, options));
 
-  const expansionIndexes = game.moves.flatMap((move, index) => {
-    if (options.preset === "deep") return [index];
-    const beforeCp = Math.abs(evalToCp(positions[index].evaluation.white));
-    const swing = Math.abs(evalToCp(positions[index].evaluation.white) - evalToCp(positions[index + 1].evaluation.white));
-    const tactical = /[x+#=]/.test(move.san) || Math.abs(moverMaterialDelta(move.fenBefore, move.fenAfter, move.color)) >= 1.5;
-    return move.uci === positions[index].bestMove && beforeCp <= 500 && (tactical || swing >= 80) ? [index] : [];
-  });
+  const expansionIndexes = [...multiPvIndexes];
+  const expansionQueuedAt = performance.now();
+  options.onPhase?.("multiPvExpansion");
+  let expanded = 0;
   for (const index of expansionIndexes) {
     if (options.signal?.aborted) throw new DOMException("Analysis was cancelled.", "AbortError");
-    const result = await search(fens[index], preset.depth, preset.expandedMultiPv, index);
+    if (new Chess(fens[index]).moves().length <= 1) continue;
+    const result = await search(fens[index], requestedDepths.get(index) ?? preset.depth, preset.expandedMultiPv, index, "multiPvExpansion", expansionQueuedAt);
     positions[index] = toPosition(fens[index], result, "final");
+    expanded += 1; options.onProgress?.(expanded, expansionIndexes.length);
   }
+  const finalizingStarted = performance.now();
+  options.onPhase?.("finalizing");
   moves = [];
   for (let index = 0; index < game.moves.length; index += 1) moves.push(buildMoveReview(game, positions, moves, index, options));
-  return buildGameReview(game, moves, positions, options);
+  const review = buildGameReview(game, moves, positions, options);
+  phaseDurationMs.finalizing += performance.now() - finalizingStarted;
+  const completedAt = performance.now();
+  options.onPerformanceReport?.({
+    totalDurationMs: completedAt - analysisStarted,
+    popupSummaryDurationMs: completedAt - analysisStarted,
+    optionalDeepAnalysisMs: 0,
+    baseOnlyPositionCount: positions.filter((position) => position.analysisDepth <= preset.initialDepth && position.analysisDepth > 0).length,
+    refinedToDepth18Count: jobs.filter((job) => job.phase === "refinement" && job.targetDepth === 18).length,
+    refinedToDepth20Count: jobs.filter((job) => job.phase === "refinement" && job.targetDepth === 20).length,
+    multiPv3JobCount: jobs.filter((job) => job.multiPv === 3).length,
+    jobs,
+    phaseDurationMs,
+  });
+  return review;
 }

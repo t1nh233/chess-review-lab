@@ -7,6 +7,8 @@ import { completedReviewSummary, createQueuedSummary, type ReviewSummary } from 
 import { assertHostAuthorization } from "./hostAuthorization";
 import { findCachedReview, saveCachedReview } from "../storage/analysisCache";
 import { getSettings } from "../storage/settings";
+import type { AnalysisPhase } from "../analysis/analysisPerformance";
+import { debugLog } from "../utils/logger";
 
 interface ActiveHostRun { hostToken: string; controller: AbortController; engine: StockfishClient }
 const activeRuns = new Map<string, ActiveHostRun>();
@@ -28,16 +30,18 @@ async function runAnalysis(message: Extract<ReturnType<typeof asMessage>, { type
   const controller = new AbortController(); const engine = new StockfishClient(); activeRuns.set(message.analysisId, { hostToken: message.hostToken, controller, engine });
   let summary = createQueuedSummary(message.analysisId, game.headers.White ?? "White", game.headers.Black ?? "Black", game.moves.length);
   summary = { ...summary, status: "analyzing", targetDepth: preset.depth }; await publish(message.analysisId, message.hostToken, summary);
-  let lastPublished = 0; let currentDepth = 0; let currentPly = 0;
-  const publishProgress = () => {
-    const now = Date.now(); if (now - lastPublished < 150) return; lastPublished = now;
-    void publish(message.analysisId, message.hostToken, { ...summary, currentPly, currentDepth: currentDepth || undefined });
+  let lastPublished = 0; let currentDepth = 0; let currentPly = 0; let phase: AnalysisPhase = "quick"; let phaseCompleted = 0; let phaseTotal = game.moves.length + 1;
+  const publishProgress = (force = false) => {
+    const now = Date.now(); if (!force && now - lastPublished < 150) return; lastPublished = now;
+    void publish(message.analysisId, message.hostToken, { ...summary, phase, phaseCompleted, phaseTotal, currentPly, currentDepth: currentDepth || undefined });
   };
   try {
     const review = await analyzeGame(game, engine, {
       safetyState: message.safetyState, preset: settings.analysisQuality, compatibilityClassifier: settings.compatibilityClassifier, signal: controller.signal,
-      onProgress: (done, total) => { currentPly = Math.min(game.moves.length, Math.floor(done * game.moves.length / total)); publishProgress(); },
+      onPhase: (nextPhase) => { phase = nextPhase; phaseCompleted = 0; phaseTotal = nextPhase === "quick" ? game.moves.length + 1 : 0; if (nextPhase !== "quick") currentPly = game.moves.length; publishProgress(true); },
+      onProgress: (done, total) => { phaseCompleted = done; phaseTotal = total; if (phase === "quick") currentPly = Math.min(game.moves.length, Math.floor(done * game.moves.length / total)); publishProgress(); },
       onEngineProgress: (progress) => { currentDepth = progress.currentDepth; publishProgress(); },
+      onPerformanceReport: (report) => debugLog("analysis_performance", report as unknown as Record<string, unknown>),
     });
     await saveCachedReview({ analysisId: message.analysisId, createdAt: Date.now(), gameFingerprint: identity.fingerprint, pgn: message.pgn, engineVersion: review.engineVersion, enginePreset: review.enginePreset, analysisModelVersion: review.analysisModelVersion, expectedPointsModelVersion: review.expectedPointsModelVersion, classifierVersion: review.classifierVersion, classifierMode: review.classifierMode, results: review }, settings.maxCachedReviews);
     await publish(message.analysisId, message.hostToken, completedReviewSummary(message.analysisId, review));

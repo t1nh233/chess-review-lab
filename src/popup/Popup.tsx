@@ -11,11 +11,15 @@ async function message<T>(value: unknown): Promise<T> { return chrome.runtime.se
 
 export function PopupSummaryView({ summary, onCancel, onDeep }: { summary: ReviewSummary; onCancel: () => void; onDeep: (analysisId: string) => void }) {
   const rows = useMemo(() => groupSummaryMoves(summary.moves), [summary.moves]);
+  const phaseLabel = summary.phase === "refinement" || summary.phase === "multiPvExpansion" ? "Refining critical moves" : summary.phase === "finalizing" ? "Finalizing" : "Quick analysis";
+  const progressValue = summary.phaseCompleted ?? summary.currentPly;
+  const progressMax = Math.max(1, summary.phaseTotal ?? summary.totalPlies);
   if (summary.status === "queued" || summary.status === "analyzing") return <main className="popup-summary" aria-label="Analysis progress">
     <h1>{summary.whiteName} <small>vs</small> {summary.blackName}</h1>
-    <strong>Analyzing {summary.currentPly} / {summary.totalPlies}</strong>
+    <strong>{phaseLabel}{summary.phase !== "finalizing" ? ` ${progressValue} / ${progressMax}` : ""}</strong>
+    {summary.phase === "quick" || !summary.phase ? <small>Analyzing {summary.currentPly} / {summary.totalPlies}</small> : null}
     <span>depth={summary.currentDepth ?? "initializing"} | Stockfish 18 Lite</span>
-    <progress value={summary.currentPly} max={summary.totalPlies}/>
+    <progress value={progressValue} max={progressMax}/>
     <button className="secondary wide" onClick={onCancel}><Square/> Cancel</button>
   </main>;
   if (summary.status === "completed") return <main className="popup-summary completed-summary">

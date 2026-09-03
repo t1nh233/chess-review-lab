@@ -17,6 +17,11 @@ describe("popup-first review summary", () => {
     expect(screen.getByText("Analyzing 57 / 118")).toBeInTheDocument(); expect(screen.getByText("depth=16 | Stockfish 18 Lite")).toBeInTheDocument();
     expect(screen.queryByLabelText(/chessboard/i)).not.toBeInTheDocument(); expect(screen.queryByLabelText(/evaluation graph/i)).not.toBeInTheDocument();
   });
+  it("reports refinement as a meaningful phase instead of fake whole-game linear progress", () => {
+    render(<PopupSummaryView summary={{ ...completed(), status: "analyzing", phase: "refinement", phaseCompleted: 7, phaseTotal: 19, currentDepth: 18, moves: [], whiteAccuracy: undefined, blackAccuracy: undefined }} onCancel={vi.fn()} onDeep={vi.fn()}/>);
+    expect(screen.getByText("Refining critical moves 7 / 19")).toBeInTheDocument();
+    expect(screen.queryByText(/Analyzing 7 \/ 118/)).not.toBeInTheDocument();
+  });
   it("renders final scores and 59 grouped full-move rows with 118 move cells", () => {
     render(<PopupSummaryView summary={completed()} onCancel={vi.fn()} onDeep={vi.fn()}/>);
     expect(screen.getByText("91.2")).toBeInTheDocument(); expect(screen.getByText("88.4")).toBeInTheDocument();

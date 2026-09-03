@@ -8,6 +8,9 @@ export interface EngineProgress {
   nodes?: number;
   nps?: number;
   multipv?: number;
+  bestMove?: string;
+  scoreCp?: number;
+  mate?: number;
 }
 export interface EngineAnalysisRequest {
   fen: string;

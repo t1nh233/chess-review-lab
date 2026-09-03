@@ -219,8 +219,11 @@ Evidence: ________________________________________________
 3. Confirm displayed depth comes from changing Stockfish UCI output and reaches depth 20.
 4. During refinement, select a distant move and confirm that area is prioritized after the active search.
 5. Confirm the UI remains responsive and analysis does not restart from position 1.
+6. Confirm the popup reports **Quick analysis**, **Refining critical moves**, and **Finalizing** rather than one misleading linear percentage.
+7. Confirm stable moves do not all continue automatically to depth 20.
+8. Confirm the popup reaches its completed summary before any optional selected-move continuation request in Deep Review.
 
-Expected: progressive results, live depth, responsive navigation, and selection-aware refinement.
+Expected: progressive results, live depth, selective refinement, responsive navigation, and popup completion independent of optional lazy continuations.
 
 Result: **NOT RUN**
 Evidence: ________________________________________________

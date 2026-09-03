@@ -29,8 +29,8 @@ class FakeWorker extends EventTarget {
   }
 }
 
-function clientFor(worker: FakeWorker, timeoutMs = 100): StockfishClient {
-  return new StockfishClient({ workerFactory: () => worker as unknown as Worker, startupTimeoutMs: timeoutMs, analysisTimeoutMs: timeoutMs });
+function clientFor(worker: FakeWorker, timeoutMs = 100, hardTimeoutMs = 300): StockfishClient {
+  return new StockfishClient({ workerFactory: () => worker as unknown as Worker, startupTimeoutMs: timeoutMs, analysisTimeoutMs: timeoutMs, analysisHardTimeoutMs: hardTimeoutMs });
 }
 
 function handshake(worker: FakeWorker) {
@@ -83,6 +83,51 @@ describe("StockfishClient lifecycle", () => {
     expect(progress).toHaveBeenLastCalledWith(expect.objectContaining({ positionIndex: 7, currentDepth: 10, targetDepth: 10, nodes: 40, nps: 4000 }));
     expect(worker.posted.filter((message) => message.type === "COMMAND" && message.command === "ucinewgame")).toHaveLength(1);
     client.dispose();
+  });
+
+  it("does not arm search timeouts before a queued job actually starts", async () => {
+    const worker = new FakeWorker();
+    handshake(worker);
+    const client = clientFor(worker, 25, 100);
+    await client.initialize("SAFE_IMPORTED_PGN");
+    vi.useFakeTimers();
+    expect(vi.getTimerCount()).toBe(0);
+    const pending = client.analyze({ fen: "startpos", depth: 10 });
+    expect(vi.getTimerCount()).toBe(2);
+    client.dispose();
+    await expect(pending).rejects.toThrow(/disposed/i);
+  });
+
+  it("refreshes the inactivity watchdog when real UCI progress arrives", async () => {
+    const worker = new FakeWorker();
+    handshake(worker);
+    const client = clientFor(worker, 25, 150);
+    await client.initialize("SAFE_IMPORTED_PGN");
+    vi.useFakeTimers();
+    worker.onPost = (message) => {
+      if (message.type !== "COMMAND" || !message.command.startsWith("go ")) return;
+      setTimeout(() => worker.emit({ type: "LINE", line: "info depth 8 multipv 1 score cp 8 nodes 20 nps 1000 pv e2e4" }), 20);
+      setTimeout(() => worker.emit({ type: "LINE", line: "info depth 9 multipv 1 score cp 9 nodes 40 nps 1000 pv e2e4" }), 40);
+      setTimeout(() => worker.emit({ type: "LINE", line: "info depth 10 multipv 1 score cp 10 nodes 80 nps 1000 pv e2e4" }), 60);
+      setTimeout(() => worker.emit({ type: "LINE", line: "bestmove e2e4" }), 70);
+    };
+    const pending = client.analyze({ fen: "startpos", depth: 10 });
+    await vi.advanceTimersByTimeAsync(75);
+    await expect(pending).resolves.toMatchObject({ bestMove: "e2e4", depth: 10 });
+    client.dispose();
+  });
+
+  it("disposes a search worker after inactivity timeout so stale output cannot leak", async () => {
+    const worker = new FakeWorker();
+    handshake(worker);
+    const client = clientFor(worker, 25, 150);
+    await client.initialize("SAFE_IMPORTED_PGN");
+    vi.useFakeTimers();
+    const pending = client.analyze({ fen: "startpos", depth: 20 });
+    const rejection = expect(pending).rejects.toThrow(/No UCI progress/i);
+    await vi.advanceTimersByTimeAsync(25);
+    await rejection;
+    expect(worker.terminated).toBe(true);
   });
 
   it("rejects and disposes when the worker fails to load", async () => {

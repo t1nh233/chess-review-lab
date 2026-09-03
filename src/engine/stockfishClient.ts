@@ -3,11 +3,12 @@ import { assertAnalysisAllowed } from "../safety/liveGameGuard";
 import type { ChessEngine, EngineAnalysisRequest, EngineAnalysisResult, EngineLine, EngineWorkerInput, EngineWorkerOutput } from "./engineTypes";
 import { parseBestMove, parseInfoLine } from "./uciParser";
 
-type Waiter = { predicate: (line: string) => boolean; resolve: (line: string) => void; reject: (error: Error) => void };
+type Waiter = { predicate: (line: string) => boolean; resolve: (line: string) => void; reject: (error: Error) => void; onLine?: (line: string) => void };
 export interface StockfishClientOptions {
   workerFactory?: (url: string, options: WorkerOptions) => Worker;
   startupTimeoutMs?: number;
   analysisTimeoutMs?: number;
+  analysisHardTimeoutMs?: number;
 }
 
 export class StockfishClient implements ChessEngine {
@@ -18,11 +19,13 @@ export class StockfishClient implements ChessEngine {
   private readonly workerFactory: (url: string, options: WorkerOptions) => Worker;
   private readonly startupTimeoutMs: number;
   private readonly analysisTimeoutMs: number;
+  private readonly analysisHardTimeoutMs: number;
 
   constructor(options: StockfishClientOptions = {}) {
     this.workerFactory = options.workerFactory ?? ((url, workerOptions) => new Worker(url, workerOptions));
     this.startupTimeoutMs = options.startupTimeoutMs ?? 15_000;
-    this.analysisTimeoutMs = options.analysisTimeoutMs ?? 120_000;
+    this.analysisTimeoutMs = options.analysisTimeoutMs ?? 30_000;
+    this.analysisHardTimeoutMs = options.analysisHardTimeoutMs ?? 300_000;
   }
 
   async initialize(safetyState: GameSafetyState): Promise<void> {
@@ -65,7 +68,7 @@ export class StockfishClient implements ChessEngine {
       this.command(`setoption name MultiPV value ${request.multiPv ?? 1}`);
       this.command(`position fen ${request.fen}`);
       const go = request.movetimeMs ? `go movetime ${request.movetimeMs}` : `go depth ${request.depth ?? 18}`;
-      const bestLinePromise = this.waitFor((line) => {
+      const bestLinePromise = this.waitForAnalysis((line) => {
         const info = parseInfoLine(line);
         if (info) {
           const prior = lines.get(info.multipv);
@@ -77,12 +80,17 @@ export class StockfishClient implements ChessEngine {
             nodes: info.nodes,
             nps: info.nps,
             multipv: info.multipv,
+            bestMove: info.moves[0],
+            scoreCp: info.scoreCp,
+            mate: info.mate,
           });
         }
         return line.startsWith("bestmove ");
-      }, this.analysisTimeoutMs, "Stockfish analysis timed out.");
+      }, this.analysisTimeoutMs, this.analysisHardTimeoutMs, "Stockfish analysis timed out.");
       this.command(go);
-      const bestLine = await bestLinePromise;
+      let bestLine: string;
+      try { bestLine = await bestLinePromise; }
+      catch (error) { this.dispose(); throw error; }
       if (signal?.aborted) throw new DOMException("Analysis was cancelled.", "AbortError");
       const bestMove = parseBestMove(bestLine);
       if (!bestMove) throw new Error("Stockfish returned no legal move.");
@@ -119,6 +127,27 @@ export class StockfishClient implements ChessEngine {
       this.waiters.push(waiter);
     });
   }
+  private waitForAnalysis(predicate: (line: string) => boolean, inactivityMs: number, hardTimeoutMs: number, timeoutMessage: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      let inactivityTimer: ReturnType<typeof setTimeout>;
+      const remove = (waiter: Waiter) => { const index = this.waiters.indexOf(waiter); if (index >= 0) this.waiters.splice(index, 1); };
+      const cleanup = () => { clearTimeout(inactivityTimer); clearTimeout(hardTimer); };
+      const fail = (waiter: Waiter, message: string) => { cleanup(); remove(waiter); reject(new Error(message)); };
+      const waiter: Waiter = {
+        predicate,
+        resolve: (line) => { cleanup(); resolve(line); },
+        reject: (error) => { cleanup(); reject(error); },
+        onLine: (line) => {
+          if (!line.startsWith("info ")) return;
+          clearTimeout(inactivityTimer);
+          inactivityTimer = setTimeout(() => fail(waiter, `${timeoutMessage} No UCI progress was received.`), inactivityMs);
+        },
+      };
+      inactivityTimer = setTimeout(() => fail(waiter, `${timeoutMessage} No UCI progress was received.`), inactivityMs);
+      const hardTimer = setTimeout(() => fail(waiter, `${timeoutMessage} Hard search limit reached.`), hardTimeoutMs);
+      this.waiters.push(waiter);
+    });
+  }
   private waitForWorkerReady(): Promise<void> {
     return new Promise((resolve, reject) => {
       const worker = this.worker;
@@ -152,6 +181,7 @@ export class StockfishClient implements ChessEngine {
       return;
     }
     if (message.type !== "LINE") return;
+    for (const waiter of [...this.waiters]) waiter.onLine?.(message.line);
     const index = this.waiters.findIndex((waiter) => waiter.predicate(message.line));
     if (index >= 0) this.waiters.splice(index, 1)[0].resolve(message.line);
   }

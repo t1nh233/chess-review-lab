@@ -1,5 +1,6 @@
 import type { GameReview } from "../analysis/analysisTypes";
 import { toDisplayClassification, type DisplayClassification } from "./displayClassification";
+import type { AnalysisPhase } from "../analysis/analysisPerformance";
 
 export type ReviewSummaryStatus = "queued" | "analyzing" | "completed" | "cancelled" | "failed";
 export interface ReviewSummaryMove {
@@ -16,6 +17,9 @@ export interface ReviewSummary {
   totalPlies: number;
   currentDepth?: number;
   targetDepth?: number;
+  phase?: AnalysisPhase;
+  phaseCompleted?: number;
+  phaseTotal?: number;
   whiteName: string;
   blackName: string;
   whiteAccuracy?: number;
