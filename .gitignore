@@ -19,3 +19,9 @@ playwright-report/
 *.pid
 .DS_Store
 Thumbs.db
+
+# Local-only files
+chess_codex.txt
+docs/reference/
+*.tgz
+.claude/

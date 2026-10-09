@@ -1,6 +1,6 @@
-export type ReviewView = "import" | "review" | "previous" | "settings";
+export type ReviewView = "import" | "review" | "previous" | "settings" | "games";
 
 export function initialReviewView(search: string): ReviewView {
   const requested = new URLSearchParams(search).get("view");
-  return requested === "previous" || requested === "settings" ? requested : "import";
+  return requested === "previous" || requested === "settings" || requested === "games" ? requested : "import";
 }

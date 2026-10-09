@@ -5,13 +5,11 @@ import { ClassificationIcon, DisplayClassificationBadge } from "../../src/presen
 import { MoveBadge } from "../../src/components/MoveBadge";
 
 describe("shared classification presentation", () => {
-  it("defines all six Vietnamese labels, original icon glyphs, and semantic colors", () => {
-    expect(DISPLAY_CLASSIFICATIONS).toEqual(["brilliant", "great", "best", "mistake", "miss", "blunder"]);
-    expect(Object.fromEntries(DISPLAY_CLASSIFICATIONS.map((key) => [key, DISPLAY_CLASSIFICATION_META[key].icon]))).toEqual({
-      brilliant: "!!", great: "!", best: "★", mistake: "?", miss: "✕", blunder: "??",
-    });
+  it("defines all ten Vietnamese labels, glyphs, and semantic colors", () => {
+    expect(DISPLAY_CLASSIFICATIONS).toEqual(["brilliant", "great", "book", "best", "excellent", "good", "inaccuracy", "mistake", "miss", "blunder"]);
     expect(Object.fromEntries(DISPLAY_CLASSIFICATIONS.map((key) => [key, DISPLAY_CLASSIFICATION_META[key].label]))).toEqual({
-      brilliant: "Thiên tài", great: "Tuyệt", best: "Tốt nhất", mistake: "Sai lầm", miss: "Bỏ lỡ", blunder: "Nước sai lầm ngớ ngẩn",
+      brilliant: "Thiên tài", great: "Tuyệt", book: "Chủ đề sách", best: "Tốt nhất", excellent: "Tuyệt vời", good: "Tốt",
+      inaccuracy: "Không chính xác", mistake: "Sai lầm", miss: "Bỏ lỡ", blunder: "Nước sai lầm ngớ ngẩn",
     });
     for (const key of DISPLAY_CLASSIFICATIONS) expect(DISPLAY_CLASSIFICATION_META[key].semanticColor).toBe(`var(--classification-${key})`);
   });
@@ -33,7 +31,7 @@ describe("shared classification presentation", () => {
 
   it("adapts rich Deep Review classifications through the shared metadata", () => {
     const { rerender } = render(<MoveBadge classification="excellent"/>);
-    expect(screen.getByLabelText("Tốt nhất")).toHaveTextContent("★");
+    expect(screen.getByLabelText("Tuyệt vời")).toHaveTextContent("↑");
     rerender(<MoveBadge classification="good" tags={["missed_opportunity"]}/>);
     expect(screen.getByLabelText("Bỏ lỡ")).toHaveTextContent("✕");
   });

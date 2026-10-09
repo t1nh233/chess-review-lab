@@ -19,4 +19,6 @@ The optimized cold run was 1.84× faster, a 45.55% duration reduction. It perfor
 
 The separate depth-20 compatibility diagnostic used mover-specific ratings (`WhiteElo`/`BlackElo`) and matched 12 of the 24 supplied Chess.com reference labels exactly (50%). This is not a release gate and is not claimed as proprietary-model equivalence. The public Expected Points loss boundaries were not changed to fit the fixture. Notably, `28...Bxa1` was not considered Great by Stockfish Lite at this depth/configuration, so it remains an investigated compatibility limitation rather than a position-specific exception.
 
+After switching to the full Stockfish 18 NNUE build, the same diagnostic at depth 16 matched 14 of the 24 labels (58.3%); the remaining misses are mostly mistakes made in already-lost positions and two Great labels. The thresholds themselves match Chess.com's published Expected Points cut-offs (Excellent ≤0.02, Good ≤0.05, Inaccuracy ≤0.10, Mistake ≤0.20, Blunder >0.20).
+
 Chess.com's Game Review runs on server-side infrastructure and may use substantially more compute. Chess Review Lab instead optimizes for local execution, progressive feedback, worker reuse, safe caching, and selective alternative analysis.

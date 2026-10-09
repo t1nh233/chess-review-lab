@@ -12,7 +12,7 @@ export function ClassificationIcon({ classification, accessibleLabel, className 
     : { "aria-hidden": true as const };
   return <svg viewBox="0 0 24 24" className={`classification-icon classification-icon-${classification} ${className}`.trim()}
     style={{ "--classification-color": meta.semanticColor } as CSSProperties} focusable="false" {...accessibility}>
-    <rect x="1.5" y="1.5" width="21" height="21" rx="6"/>
+    <rect x="1" y="1" width="22" height="22" rx="11"/>
     <text x="12" y="12.4" dominantBaseline="middle" textAnchor="middle">{meta.icon}</text>
   </svg>;
 }

@@ -1,3 +1,4 @@
+import { bookPlyCount } from "../chess/openingBook";
 import { Chess } from "chess.js";
 import type { ParsedGame } from "../chess/pgn";
 import { materialBalance, moverMaterialDelta } from "../chess/material";
@@ -109,6 +110,7 @@ function buildMoveReview(
   if (sacrifice.sacrifice >= 1.8) tags.push("sacrifice");
   if (after.evaluation.white.mate !== undefined) tags.push("mate");
   if (index === game.moves.length - 1) tags.push("game_ending");
+  if (move.ply <= bookPlyCount(game.headers.ECOUrl)) tags.push("book");
   const mateBefore = moverMate(before.evaluation.white, move.color);
   const mateAfter = moverMate(after.evaluation.white, move.color);
   const mateTransition = mateAfter !== undefined && mateAfter < 0 && (mateBefore === undefined || mateBefore >= 0)

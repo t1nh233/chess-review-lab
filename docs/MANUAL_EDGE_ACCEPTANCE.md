@@ -81,6 +81,20 @@ Use this checklist as the release decision record. Detailed procedures and evide
 - [ ] No evaluation, best move, PV, classification, hint, or engine suggestion is visible on a live game.
 - [ ] Positively completed games and imported PGNs are allowed.
 
+### Chess.com just-finished game
+
+- [ ] Start a normal game without using engine assistance.
+- [ ] During the game, the popup says **Ván đấu đang diễn ra** and exposes no engine analysis action or data.
+- [ ] Finish the game by a normal supported result.
+- [ ] Without refreshing Chess.com, open the popup.
+- [ ] The popup identifies **Ván đấu vừa kết thúc**.
+- [ ] **Phân tích ván vừa chơi** appears.
+- [ ] Selecting it starts exactly one analysis.
+- [ ] Close and reopen the popup; analysis continues rather than restarting.
+- [ ] The completed summary appears.
+- [ ] **Phân tích ván mới** returns to the current-game state and detects a newer completed game.
+- [ ] No live evaluation, best move, PV, hint, or classification was available before completion.
+
 ### Console and resources
 
 - [ ] No uncaught exceptions appear in popup, Review page, offscreen document, or service-worker consoles.

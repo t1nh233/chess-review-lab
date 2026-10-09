@@ -5,7 +5,7 @@ const { Chess } = require("chess.js");
 const initEngine = require("stockfish");
 
 const fixturePath = path.resolve(process.env.BENCHMARK_PGN || "tests/fixtures/clean-game.pgn");
-const enginePath = path.resolve(process.env.STOCKFISH_ENGINE_PATH || "node_modules/stockfish/bin/stockfish-18-lite-single.js");
+const enginePath = path.resolve(process.env.STOCKFISH_ENGINE_PATH || "node_modules/stockfish/bin/stockfish-18-single.js");
 const configuredDepth = Number(process.env.BENCHMARK_DEPTH || 12);
 const strategy = process.env.BENCHMARK_STRATEGY || "selective";
 const pgn = fs.readFileSync(fixturePath, "utf8");

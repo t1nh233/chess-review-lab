@@ -4,12 +4,12 @@
 .popup-summary > span { font-size: 12px; }
 .popup-summary progress { width: 100%; height: 12px; accent-color: var(--mint); }
 .popup-accuracy { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.popup-accuracy div { background: #fff; border: 1px solid var(--line); padding: 9px; }
+.popup-accuracy div { background: var(--panel); border: 1px solid var(--line); padding: 9px; }
 .popup-accuracy strong { display: block; font-size: 22px; }
 .popup-accuracy span { font-size: 9px; color: var(--muted); }
-.popup-moves { max-height: 300px; overflow: auto; background: #fff; border: 1px solid var(--line); }
+.popup-moves { max-height: 300px; overflow: auto; background: var(--panel); border: 1px solid var(--line); }
 .popup-move-header, .popup-move-row { display: grid; grid-template-columns: 30px 1fr 1fr; align-items: start; }
-.popup-move-header { position: sticky; top: 0; background: var(--charcoal); color: #fff; z-index: 1; }
+.popup-move-header { position: sticky; top: 0; background: var(--charcoal); color: var(--palette-surface); z-index: 1; }
 .popup-move-header > *, .popup-move-row > * { padding: 6px; }
 .popup-move-row > * { border-top: 1px solid var(--line); min-width: 0; }
 .popup-move-row > span { font-size: 11px; font-weight: 700; }
@@ -17,3 +17,27 @@
 .popup-import { margin-top: 10px; }
 .popup-import label { display: block; font-size: 11px; font-weight: 700; }
 .popup-import textarea { box-sizing: border-box; width: 100%; height: 100px; resize: vertical; margin-top: 4px; border: 1px solid var(--line); }
+
+/* Popup move list: two player columns (same move number on the same row) plus time spent, like Chess.com. */
+.popup-moves { max-height: 340px; border-radius: 6px; }
+.popup-move-header, .popup-move-row { grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr); align-items: center; }
+.popup-moves.with-times .popup-move-header, .popup-moves.with-times .popup-move-row { grid-template-columns: 28px minmax(0, 1fr) minmax(0, 1fr) 84px; }
+.popup-move-header { background: var(--panel-raised); color: var(--text-muted); font-size: 10px; box-shadow: 0 1px 0 var(--divider); }
+.popup-move-header b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.popup-move-row > * { border-top: 0; padding: 5px 4px; }
+.popup-move-row > b { color: var(--text-muted); padding-left: 8px; }
+.popup-move-row > b::after { content: "."; }
+.popup-move-row > span { display: flex; align-items: center; justify-content: space-between; gap: 4px; font-size: 13px; }
+.popup-move-row .san strong { font-weight: 800; }
+.popup .figurine { width: 16px; height: 16px; flex: 0 0 16px; }
+.popup .san { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
+.popup .time-cell { display: flex; flex-direction: column; gap: 2px; align-items: flex-end; padding: 3px 8px 3px 0; }
+.popup .time-line { display: flex; align-items: center; justify-content: flex-end; gap: 4px; width: 100%; height: 10px; }
+.popup .time-label { font-size: 9px; font-weight: 700; color: var(--text-muted); order: 2; min-width: 30px; font-variant-numeric: tabular-nums; }
+.popup .time-bar { height: 7px; border-radius: 2px; order: 1; max-width: 38px; }
+.popup .time-bar-white { background: #f0efec; }
+.popup .time-bar-black { background: #6b6762; }
+:root:not([data-theme="dark"]) .popup .time-bar-white { background: #8d8a84; }
+:root:not([data-theme="dark"]) .popup .time-bar-black { background: #403d39; }
+.popup .time-head { text-align: right; padding-right: 8px; }
+.popup-hint { margin: 4px 0 10px; font-size: 11px; color: var(--text-muted); }

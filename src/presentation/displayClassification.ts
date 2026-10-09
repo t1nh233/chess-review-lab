@@ -1,20 +1,33 @@
-export type DisplayClassification = "brilliant" | "great" | "best" | "mistake" | "miss" | "blunder";
+import { CLASSIFICATION_THEME_TOKENS } from "./themeTokens";
+
+/**
+ * The ten categories shown by Chess.com's Game Review (full view). Brief view shows only BRIEF_CLASSIFICATIONS.
+ * Expected Points loss boundaries (published by Chess.com): Best 0, Excellent <=0.02, Good <=0.05,
+ * Inaccuracy <=0.10, Mistake <=0.20, Blunder >0.20. Brilliant, Great, Book and Miss are rule based.
+ */
+export type DisplayClassification = "brilliant" | "great" | "book" | "best" | "excellent" | "good" | "inaccuracy" | "mistake" | "miss" | "blunder";
 
 export interface DisplayClassificationMeta {
   label: string;
-  icon: "!!" | "!" | "★" | "?" | "✕" | "??";
+  icon: string;
   semanticColor: string;
 }
 
-export const DISPLAY_CLASSIFICATIONS: readonly DisplayClassification[] = ["brilliant", "great", "best", "mistake", "miss", "blunder"];
+export const DISPLAY_CLASSIFICATIONS: readonly DisplayClassification[] = ["brilliant", "great", "book", "best", "excellent", "good", "inaccuracy", "mistake", "miss", "blunder"];
+/** Rows of the brief summary; Brilliant is added automatically when either player has one. */
+export const BRIEF_CLASSIFICATIONS: readonly DisplayClassification[] = ["great", "best", "excellent", "mistake", "miss", "blunder"];
 
 export const DISPLAY_CLASSIFICATION_META: Record<DisplayClassification, DisplayClassificationMeta> = {
-  brilliant: { label: "Thiên tài", icon: "!!", semanticColor: "var(--classification-brilliant)" },
-  great: { label: "Tuyệt", icon: "!", semanticColor: "var(--classification-great)" },
-  best: { label: "Tốt nhất", icon: "★", semanticColor: "var(--classification-best)" },
-  mistake: { label: "Sai lầm", icon: "?", semanticColor: "var(--classification-mistake)" },
-  miss: { label: "Bỏ lỡ", icon: "✕", semanticColor: "var(--classification-miss)" },
-  blunder: { label: "Nước sai lầm ngớ ngẩn", icon: "??", semanticColor: "var(--classification-blunder)" },
+  brilliant: { label: "Thiên tài", icon: "!!", semanticColor: CLASSIFICATION_THEME_TOKENS.brilliant },
+  great: { label: "Tuyệt", icon: "!", semanticColor: CLASSIFICATION_THEME_TOKENS.great },
+  book: { label: "Chủ đề sách", icon: "≡", semanticColor: CLASSIFICATION_THEME_TOKENS.book },
+  best: { label: "Tốt nhất", icon: "★", semanticColor: CLASSIFICATION_THEME_TOKENS.best },
+  excellent: { label: "Tuyệt vời", icon: "↑", semanticColor: CLASSIFICATION_THEME_TOKENS.excellent },
+  good: { label: "Tốt", icon: "✓", semanticColor: CLASSIFICATION_THEME_TOKENS.good },
+  inaccuracy: { label: "Không chính xác", icon: "?!", semanticColor: CLASSIFICATION_THEME_TOKENS.inaccuracy },
+  mistake: { label: "Sai lầm", icon: "?", semanticColor: CLASSIFICATION_THEME_TOKENS.mistake },
+  miss: { label: "Bỏ lỡ", icon: "✕", semanticColor: CLASSIFICATION_THEME_TOKENS.miss },
+  blunder: { label: "Nước sai lầm ngớ ngẩn", icon: "??", semanticColor: CLASSIFICATION_THEME_TOKENS.blunder },
 };
 
 export const DISPLAY_CLASSIFICATION_LABELS = Object.fromEntries(
@@ -23,7 +36,7 @@ export const DISPLAY_CLASSIFICATION_LABELS = Object.fromEntries(
 
 export type DisplayClassificationCounts = Record<DisplayClassification, number>;
 export function emptyDisplayClassificationCounts(): DisplayClassificationCounts {
-  return { brilliant: 0, great: 0, best: 0, mistake: 0, miss: 0, blunder: 0 };
+  return { brilliant: 0, great: 0, book: 0, best: 0, excellent: 0, good: 0, inaccuracy: 0, mistake: 0, miss: 0, blunder: 0 };
 }
 export function countDisplayClassifications<T extends { color: "white" | "black"; displayClassification: DisplayClassification }>(moves: readonly T[]) {
   const counts = { white: emptyDisplayClassificationCounts(), black: emptyDisplayClassificationCounts() };

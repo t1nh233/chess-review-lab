@@ -1,6 +1,8 @@
 import { useMemo } from "react";
+import { ClassificationIcon } from "../presentation/classificationIcons";
+import { DISPLAY_CLASSIFICATION_META, type DisplayClassification } from "../presentation/displayClassification";
 
-const PIECES: Record<string, string> = { K: "♔", Q: "♕", R: "♖", B: "♗", N: "♘", P: "♙", k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" };
+const pieceAsset = (char: string) => `pieces/${char === char.toUpperCase() ? "w" : "b"}${char.toUpperCase()}.svg`;
 function fenSquares(fen: string): (string | null)[] {
   return fen.split(" ")[0].split("/").flatMap((rank) => [...rank].flatMap((char) => /\d/.test(char) ? Array(Number(char)).fill(null) : [char]));
 }
@@ -21,7 +23,7 @@ function BestMoveArrow({ move, orientation }: { move?: string; orientation: "whi
   </svg>;
 }
 
-export function ChessBoard({ fen, orientation, lastMove, bestMove }: { fen: string; orientation: "white" | "black"; lastMove?: string; bestMove?: string }) {
+export function ChessBoard({ fen, orientation, lastMove, bestMove, badge }: { fen: string; orientation: "white" | "black"; lastMove?: string; bestMove?: string; badge?: DisplayClassification }) {
   const source = useMemo(() => fenSquares(fen), [fen]);
   const indexes = Array.from({ length: 64 }, (_, index) => orientation === "white" ? index : 63 - index);
   return <div className="board" role="grid" aria-label={`Chess position, ${orientation} at bottom`}>
@@ -29,7 +31,8 @@ export function ChessBoard({ fen, orientation, lastMove, bestMove }: { fen: stri
       const rank = 8 - Math.floor(sourceIndex / 8); const file = "abcdefgh"[sourceIndex % 8]; const square = `${file}${rank}`;
       const highlighted = lastMove && (lastMove.slice(0, 2) === square || lastMove.slice(2, 4) === square);
       return <div role="gridcell" aria-label={`${square}${source[sourceIndex] ? ` ${source[sourceIndex]}` : " empty"}`} className={`square ${(Math.floor(sourceIndex / 8) + sourceIndex) % 2 ? "dark" : "light"} ${highlighted ? "last" : ""}`} key={square}>
-        <span className="piece" aria-hidden="true">{source[sourceIndex] ? PIECES[source[sourceIndex]!] : ""}</span>
+        {source[sourceIndex] && <img className="piece" src={pieceAsset(source[sourceIndex]!)} alt="" draggable={false}/>}
+        {badge && lastMove?.slice(2, 4) === square && <span className="square-badge" title={DISPLAY_CLASSIFICATION_META[badge].label}><ClassificationIcon classification={badge}/></span>}
         {((orientation === "white" && file === "a") || (orientation === "black" && file === "h")) && <span className="rank-label">{rank}</span>}
         {((orientation === "white" && rank === 1) || (orientation === "black" && rank === 8)) && <span className="file-label">{file}</span>}
       </div>;

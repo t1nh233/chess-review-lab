@@ -10,6 +10,8 @@ export interface ReviewSummaryMove {
   color: "white" | "black";
   san: string;
   displayClassification: DisplayClassification;
+  /** Seconds spent on the move, when the PGN has clock comments. */
+  spentSeconds?: number;
 }
 export interface ReviewSummary {
   analysisId: string;
@@ -49,7 +51,7 @@ export function completedReviewSummary(analysisId: string, review: GameReview): 
     whiteAccuracy: review.whiteAccuracy, blackAccuracy: review.blackAccuracy,
     moves: review.moves.map((move) => ({
       ply: move.ply, moveNumber: move.moveNumber, color: move.color, san: move.san,
-      displayClassification: toDisplayClassification(move),
+      displayClassification: toDisplayClassification(move), spentSeconds: move.spentSeconds,
     })),
   };
 }

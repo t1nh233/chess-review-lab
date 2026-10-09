@@ -8,6 +8,10 @@ export interface GameMove {
   uci: string;
   fenBefore: string;
   fenAfter: string;
+  /** Remaining clock after the move, from a Chess.com `[%clk h:mm:ss.d]` comment. */
+  clockSeconds?: number;
+  /** Time spent on the move (previous own clock + increment - clock). */
+  spentSeconds?: number;
 }
 
 export interface ParsedGame {
@@ -26,6 +30,28 @@ function rating(value?: string): number | undefined {
   if (!value) return undefined;
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+const CLK = /\[%clk\s+(\d+):(\d{1,2}):(\d{1,2}(?:\.\d+)?)\]/g;
+function clockComments(pgn: string): number[] {
+  const body = pgn.replace(/^\s*(?:\[[^\]]*\]\s*)+/, "");
+  return [...body.matchAll(CLK)].map((match) => Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3]));
+}
+function timeControl(value?: string): { base: number; increment: number } | undefined {
+  const match = /^(\d+)(?:\+(\d+))?$/.exec(value ?? "");
+  return match ? { base: Number(match[1]), increment: Number(match[2] ?? 0) } : undefined;
+}
+function attachClocks(moves: GameMove[], pgn: string, control: string | undefined): void {
+  const clocks = clockComments(pgn);
+  if (clocks.length !== moves.length) return;
+  const parsed = timeControl(control);
+  const previous: Record<"white" | "black", number | undefined> = { white: parsed?.base, black: parsed?.base };
+  moves.forEach((move, index) => {
+    move.clockSeconds = clocks[index];
+    const before = previous[move.color];
+    if (before !== undefined) move.spentSeconds = Math.max(0, Math.round((before + (parsed?.increment ?? 0) - clocks[index]) * 10) / 10);
+    previous[move.color] = clocks[index];
+  });
 }
 
 export function parsePgn(pgn: string): ParsedGame {
@@ -53,6 +79,7 @@ export function parsePgn(pgn: string): ParsedGame {
       });
     }
     if (!moves.length) throw new Error("The PGN does not contain any moves.");
+    attachClocks(moves, trimmed, headers.TimeControl);
     const result = headers.Result && headers.Result !== "*" ? headers.Result : undefined;
     return {
       headers: { ...headers }, moves, result,

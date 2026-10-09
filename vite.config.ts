@@ -12,7 +12,7 @@ function extensionAssets(): Plugin {
       copyFileSync(resolve("manifest.json"), resolve(dist, "manifest.json"));
       cpSync(resolve("public/icons"), resolve(dist, "icons"), { recursive: true });
       const engineDir = resolve("node_modules/stockfish/bin");
-      for (const file of ["stockfish-18-lite-single.js", "stockfish-18-lite-single.wasm"]) {
+      for (const file of ["stockfish-18-single.js", "stockfish-18-single.wasm"]) {
         const source = resolve(engineDir, file);
         if (!existsSync(source)) throw new Error(`Missing Stockfish distribution: ${source}`);
         copyFileSync(source, resolve(dist, "engine", file));

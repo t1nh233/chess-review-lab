@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, FlipHorizontal2, FolderOpen, Gauge, RotateCcw, Settings as SettingsIcon, Square, Upload } from "lucide-react";
+import { Swords, X, ArrowLeft, ArrowRight, ChevronsLeft, ChevronsRight, FlipHorizontal2, FolderOpen, Gauge, RotateCcw, Settings as SettingsIcon, Square, Upload } from "lucide-react";
 import { analyzeGame, ENGINE_PRESETS } from "../analysis/analyzeGame";
 import { PositionAnalysisCache } from "../analysis/positionAnalysisCache";
 import type { GameReview } from "../analysis/analysisTypes";
@@ -10,6 +10,11 @@ import { EvalBar } from "../components/EvalBar";
 import { EvaluationChart } from "../components/EvaluationChart";
 import { GameSummary } from "../components/GameSummary";
 import { MoveList } from "../components/MoveList";
+import { ThemeToggle } from "../components/ThemeToggle";
+import { openingNameFromUrl } from "../chess/openingBook";
+import { LatestGameCard } from "../popup/LatestGameCard";
+import { PlayerBar } from "../components/PlayerBar";
+import { toDisplayClassification } from "../popup/displayClassification";
 import { SettingsPanel } from "../components/SettingsPanel";
 import { ANALYSIS_MODEL_VERSION, CLASSIFIER_VERSION, ENGINE_VERSION, EXPECTED_POINTS_MODEL_VERSION } from "../config/versions";
 import { StockfishClient } from "../engine/stockfishClient";
@@ -60,7 +65,7 @@ export function ReviewApp() {
     activeAbort.current?.abort();
     lazyAbort.current?.abort(); lazyEngine.current?.dispose(); lazyEngine.current = null; reviewSafety.current = payload.safetyState;
     activeAbort.current = null;
-    setError(""); setView("review"); setProgress([0, 1]); setEngineDepth(0);
+    setError(""); setReview(null); setSelectedPly(0); setView("review"); setProgress([0, 1]); setEngineDepth(0);
     let controller: AbortController | null = null;
     try {
       const game = parsePgn(payload.pgn); const fingerprint = gameFingerprint(game);
@@ -160,10 +165,9 @@ export function ReviewApp() {
           moves: current.moves.map((move, moveIndex) => moveIndex === index ? { ...move, bestMove: result!.bestMove, principalVariation: result!.lines[0]?.moves ?? [], continuationLines: result!.lines, continuationsStatus: "ready" } : move),
         } : current);
       } catch (caught) {
-        if (!(caught instanceof DOMException && caught.name === "AbortError")) {
-          setReview((current) => current ? { ...current, moves: current.moves.map((move, moveIndex) => moveIndex === index ? { ...move, continuationsStatus: undefined } : move) } : current);
-          setError(caught instanceof Error ? caught.message : "Continuation analysis failed.");
-        }
+        // Always clear the loading flag so a skipped or failed position can be requested again later.
+        setReview((current) => current ? { ...current, moves: current.moves.map((move, moveIndex) => moveIndex === index && move.continuationsStatus === "loading" ? { ...move, continuationsStatus: undefined } : move) } : current);
+        if (!(caught instanceof DOMException && caught.name === "AbortError")) setError(caught instanceof Error ? caught.message : "Continuation analysis failed.");
       }
     })();
   }, [progress, review, selectedPly, settings.analysisQuality]);
@@ -172,6 +176,15 @@ export function ReviewApp() {
     try { parsePgn(pgn); const response = await message<{ ok: boolean; token?: string; error?: string }>({ type: "START_REVIEW", pgn, safetyState: "SAFE_IMPORTED_PGN" }); if (!response.ok || !response.token) throw new Error(response.error); history.replaceState(null, "", `review.html?token=${encodeURIComponent(response.token)}`); await loadToken(response.token); }
     catch (caught) { setError(caught instanceof Error ? caught.message : "This PGN could not be parsed."); }
   };
+  // Drops the current review (cancelling any running analysis) so another game can be picked without the popup.
+  const closeReview = () => {
+    runSequence.current += 1;
+    activeAbort.current?.abort(); activeAbort.current = null;
+    lazyAbort.current?.abort(); lazyEngine.current?.dispose(); lazyEngine.current = null;
+    setReview(null); setSelectedPly(0); setProgress(null); setError("");
+    history.replaceState(null, "", "review.html?view=games"); loadedToken.current = null; loadedAnalysisId.current = null;
+    setView("games");
+  };
   const updateSettings = (next: Settings) => { setSettings(next); void saveSettings(next); };
   const selection = review ? getReviewSelection(review, selectedPly) : undefined;
   const currentFen = selection?.currentFen ?? "8/8/8/8/8/8/8/8 w - - 0 1";
@@ -179,13 +192,18 @@ export function ReviewApp() {
   selectedPlyRef.current = selectedPly;
   const effectiveOrientation = settings.boardOrientation === "auto" ? orientation : settings.boardOrientation;
 
-  return <div className="app-shell"><header className="topbar"><button className="brand" onClick={() => setView(review ? "review" : "import")}><span className="brand-mark">CR</span><span>Chess Review Lab</span></button><nav><button className={view === "import" ? "active" : ""} onClick={() => setView("import")}><Upload/> Import</button><button className={view === "previous" ? "active" : ""} onClick={() => { setView("previous"); void refreshCached(); }}><FolderOpen/> Previous</button><button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}><SettingsIcon/> Settings</button></nav></header>
+  return <div className="app-shell"><header className="topbar"><button className="brand" onClick={() => setView(review ? "review" : "import")}><span className="brand-mark">CR</span><span>Chess Review Lab</span></button><nav><button className={view === "import" ? "active" : ""} onClick={() => setView("import")}><Upload/> Import</button><button className={view === "games" ? "active" : ""} onClick={() => setView("games")}><Swords/> Ván đấu</button><button className={view === "previous" ? "active" : ""} onClick={() => { setView("previous"); void refreshCached(); }}><FolderOpen/> Previous</button><button className={view === "settings" ? "active" : ""} onClick={() => setView("settings")}><SettingsIcon/> Settings</button><ThemeToggle/></nav></header>
     {error && <div className="error-banner" role="alert">{error}<button aria-label="Dismiss error" onClick={() => setError("")}>×</button></div>}
     {view === "import" && <ImportView onImport={importPgn}/>} 
     {view === "settings" && <main className="narrow"><SettingsPanel settings={settings} onChange={updateSettings}/><aside className="about-note"><h2>About the model</h2><p>Move thresholds follow publicly documented Expected Points categories. Expected Points, Estimated Accuracy, Great, Brilliant, and Miss detection are independently implemented approximations.</p><strong>Fair play</strong><p>Analysis is unavailable for live or unverified online games.</p></aside></main>}
+    {view === "games" && <main className="narrow"><LatestGameCard onAnalyze={(pgn) => void importPgn(pgn)}/></main>}
     {view === "previous" && <main className="narrow"><section className="previous-list"><h1>Previous reviews</h1>{cached.length === 0 && <p>No cached reviews yet.</p>}{cached.map((item) => <article key={item.analysisId}><div><strong>{item.results.game.headers.White ?? "White"} vs {item.results.game.headers.Black ?? "Black"}</strong><span>{new Date(item.createdAt).toLocaleString()} · {item.enginePreset}</span></div><div><button onClick={() => { setReview(item.results); setView("review"); setSelectedPly(0); }}>Open</button><button className="icon-button danger" title="Delete review" aria-label="Delete review" onClick={() => void deleteCachedReview(item.analysisId).then(refreshCached)}>×</button></div></article>)}</section></main>}
-    {view === "review" && review && <main className="review-layout"><section className="board-column"><div className="board-stage"><EvalBar evaluation={selectedMove?.evalAfter ?? review.positions[0].evaluation.white}/><ChessBoard fen={currentFen} orientation={effectiveOrientation} lastMove={selectedMove?.uci} bestMove={settings.showBestMoveArrow ? review.positions[selectedPly]?.bestMove : undefined}/></div><div className="board-controls"><button className="icon-button" title="Flip board" aria-label="Flip board" onClick={() => setOrientation((value) => value === "white" ? "black" : "white")}><FlipHorizontal2/></button><div className="navigator"><button className="icon-button" title="Previous move" aria-label="Previous move" disabled={selectedPly === 0} onClick={() => setSelectedPly((value) => Math.max(0, value - 1))}><ArrowLeft/></button><span>{selectedPly} / {review.moves.length}</span><button className="icon-button" title="Next move" aria-label="Next move" disabled={selectedPly === review.moves.length} onClick={() => setSelectedPly((value) => Math.min(review.moves.length, value + 1))}><ArrowRight/></button></div><button className="icon-button" title="Re-run analysis" aria-label="Re-run analysis" onClick={() => void runPayload({ pgn: review.game.pgn, safetyState: "SAFE_IMPORTED_PGN" }, true)}><RotateCcw/></button></div><EvaluationChart moves={review.moves} selectedPly={selectedPly} onSelect={setSelectedPly}/></section><section className="review-column"><div className="game-title"><div><span>{review.game.headers.Event ?? "Imported game"}</span><h1>{review.game.headers.White ?? "White"} <small>vs</small> {review.game.headers.Black ?? "Black"}</h1></div><span className="result">{review.game.result ?? "Completed"}</span></div><div className="review-panels"><MoveList moves={review.moves} selectedPly={selectedPly} onSelect={setSelectedPly}/><AnalysisPanel move={selectedMove}/></div><GameSummary review={review} onSelect={setSelectedPly}/></section></main>}
-    {view === "review" && progress && <div className="progress-overlay" role="status"><div><Gauge/><h2>Analyzing game</h2><p>Position {progress[0]} / {progress[1]}</p><p>depth={engineDepth || "initializing"} | Stockfish 18 Lite</p><progress value={progress[0]} max={progress[1]}/><button onClick={() => activeAbort.current?.abort()}><Square/> Cancel analysis</button></div></div>}
+    {view === "review" && review && (() => {
+      const top = effectiveOrientation === "white" ? "black" : "white"; const bottom = effectiveOrientation;
+      const bar = (color: "white" | "black") => <PlayerBar color={color} name={color === "white" ? review.game.headers.White ?? "White" : review.game.headers.Black ?? "Black"} rating={color === "white" ? review.game.whiteRating : review.game.blackRating} accuracy={color === "white" ? review.whiteAccuracy : review.blackAccuracy}/>;
+      return <main className="review-layout"><section className="board-column">{bar(top)}<div className="board-stage"><EvalBar evaluation={selectedMove?.evalAfter ?? review.positions[0].evaluation.white} orientation={effectiveOrientation}/><ChessBoard fen={currentFen} orientation={effectiveOrientation} lastMove={selectedMove?.uci} badge={selectedMove ? toDisplayClassification(selectedMove) : undefined} bestMove={settings.showBestMoveArrow && selectedMove && selectedMove.bestMove !== selectedMove.uci ? selectedMove.bestMove : undefined}/></div>{bar(bottom)}<div className="board-controls"><button className="icon-button" title="Flip board" aria-label="Flip board" onClick={() => setOrientation((value) => value === "white" ? "black" : "white")}><FlipHorizontal2/></button><div className="navigator"><button className="icon-button" title="Start" aria-label="First move" disabled={selectedPly === 0} onClick={() => setSelectedPly(0)}><ChevronsLeft/></button><button className="icon-button" title="Previous move" aria-label="Previous move" disabled={selectedPly === 0} onClick={() => setSelectedPly((value) => Math.max(0, value - 1))}><ArrowLeft/></button><span>{selectedPly} / {review.moves.length}</span><button className="icon-button" title="Next move" aria-label="Next move" disabled={selectedPly === review.moves.length} onClick={() => setSelectedPly((value) => Math.min(review.moves.length, value + 1))}><ArrowRight/></button><button className="icon-button" title="End" aria-label="Last move" disabled={selectedPly === review.moves.length} onClick={() => setSelectedPly(review.moves.length)}><ChevronsRight/></button></div><button className="icon-button" title="Re-run analysis" aria-label="Re-run analysis" onClick={() => void runPayload({ pgn: review.game.pgn, safetyState: "SAFE_IMPORTED_PGN" }, true)}><RotateCcw/></button></div></section><section className="review-column"><div className="game-title"><div><span>{review.game.headers.Event ?? "Imported game"}</span><h1>{review.game.headers.White ?? "White"} <small>vs</small> {review.game.headers.Black ?? "Black"}</h1></div><span className="result">{review.game.result ?? "Completed"}</span></div><div className="review-actions"><button onClick={() => setView("games")}><Swords/> Chọn ván khác</button><button className="close-review" onClick={closeReview}><X/> Đóng phân tích</button></div><EvaluationChart moves={review.moves} selectedPly={selectedPly} onSelect={setSelectedPly}/><AnalysisPanel move={selectedMove}/><GameSummary review={review} onSelect={setSelectedPly}><MoveList moves={review.moves} selectedPly={selectedPly} onSelect={setSelectedPly} openingName={openingNameFromUrl(review.game.headers.ECOUrl)}/></GameSummary></section></main>;
+    })()}
+    {view === "review" && progress && <div className="progress-overlay" role="status"><div><Gauge/><h2>Analyzing game</h2><p>Position {progress[0]} / {progress[1]}</p><p>depth={engineDepth || "initializing"} | Stockfish 18 NNUE</p><progress value={progress[0]} max={progress[1]}/><button onClick={() => activeAbort.current?.abort()}><Square/> Cancel analysis</button></div></div>}
   </div>;
 }
 

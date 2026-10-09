@@ -1,8 +1,9 @@
+import type { ReactNode } from "react";
 import type { GameReview } from "../analysis/analysisTypes";
 import { toDisplayClassification } from "../popup/displayClassification";
 import { ClassificationSummary } from "./ClassificationSummary";
 import { ExportPgn } from "./ExportPgn";
-export function GameSummary({ review, onSelect }: { review: GameReview; onSelect: (ply: number) => void }) {
+export function GameSummary({ review, onSelect, children }: { review: GameReview; onSelect: (ply: number) => void; children?: ReactNode }) {
   const moveButton = (ply: number) => {
     const move = review.moves[ply - 1];
     if (!move) return null;
@@ -19,6 +20,7 @@ export function GameSummary({ review, onSelect }: { review: GameReview; onSelect
       blackAccuracy={review.blackAccuracy}
       moves={review.moves.map((move) => ({ color: move.color, displayClassification: toDisplayClassification(move) }))}
     />
+    {children && <div className="summary-moves">{children}</div>}
     <h3>Largest mistake</h3>
     <div className="critical-links">{review.summary.largestMistakePly ? moveButton(review.summary.largestMistakePly) : <span>None identified</span>}</div>
     <h3>Critical moments</h3>

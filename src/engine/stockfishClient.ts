@@ -15,6 +15,8 @@ export class StockfishClient implements ChessEngine {
   private worker: Worker | null = null;
   private waiters: Waiter[] = [];
   private analyzing = false;
+  private searchQueue: Promise<void> = Promise.resolve();
+  private queuedSearches = 0;
   private safetyState: GameSafetyState = "UNKNOWN";
   private readonly workerFactory: (url: string, options: WorkerOptions) => Worker;
   private readonly startupTimeoutMs: number;
@@ -33,7 +35,7 @@ export class StockfishClient implements ChessEngine {
     this.dispose();
     this.safetyState = safetyState;
     const workerUrl = chrome.runtime.getURL("engine/stockfishWorker.js");
-    const engineUrl = chrome.runtime.getURL("engine/stockfish-18-lite-single.js");
+    const engineUrl = chrome.runtime.getURL("engine/stockfish-18-single.js");
     this.worker = this.workerFactory(workerUrl, { type: "module" });
     this.worker.onmessage = (event: MessageEvent<EngineWorkerOutput>) => this.handleMessage(event.data);
     this.worker.onerror = () => this.failWorker(new Error("Stockfish worker failed."));
@@ -44,7 +46,7 @@ export class StockfishClient implements ChessEngine {
       const uciReady = this.waitFor((line) => line === "uciok", this.startupTimeoutMs, "Stockfish UCI handshake timed out.");
       this.command("uci");
       await uciReady;
-      this.command("setoption name Hash value 64");
+      this.command("setoption name Hash value 128");
       this.command("ucinewgame");
       const engineReady = this.waitFor((line) => line === "readyok", this.startupTimeoutMs, "Stockfish readiness check timed out.");
       this.command("isready");
@@ -55,7 +57,25 @@ export class StockfishClient implements ChessEngine {
     }
   }
 
+  /**
+   * Searches run one at a time. A request that arrives while another search is still running (for example one that
+   * was just aborted and is waiting for Stockfish's final `bestmove`) queues behind it instead of failing.
+   */
   async analyze(request: EngineAnalysisRequest, signal?: AbortSignal): Promise<EngineAnalysisResult> {
+    assertAnalysisAllowed(this.safetyState);
+    const previous = this.searchQueue;
+    const mustWait = this.queuedSearches > 0;
+    this.queuedSearches += 1;
+    let release!: () => void;
+    this.searchQueue = new Promise<void>((resolve) => { release = resolve; });
+    try {
+      if (mustWait) await previous;
+      if (signal?.aborted) throw new DOMException("Analysis was cancelled.", "AbortError");
+      return await this.runAnalysis(request, signal);
+    } finally { this.queuedSearches -= 1; release(); }
+  }
+
+  private async runAnalysis(request: EngineAnalysisRequest, signal?: AbortSignal): Promise<EngineAnalysisResult> {
     assertAnalysisAllowed(this.safetyState);
     if (!this.worker) throw new Error("Stockfish failed to initialize.");
     if (this.analyzing) throw new Error("Stockfish is already analyzing a position.");

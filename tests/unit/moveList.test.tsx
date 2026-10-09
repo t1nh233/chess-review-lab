@@ -60,7 +60,20 @@ describe("Deep Review full-move list", () => {
     expect(rows).toHaveLength(60);
     expect(within(table).getAllByRole("button")).toHaveLength(118);
     expect(within(rows[59]).getByRole("rowheader")).toHaveTextContent("59");
-    expect(within(rows[59]).getByText("Kg1")).toBeInTheDocument();
-    expect(within(rows[59]).getByText("Qg2#")).toBeInTheDocument();
+    // The piece letter is drawn as a figurine, so assert through the accessible name.
+    expect(within(rows[59]).getByRole("button", { name: /Kg1/ })).toBeInTheDocument();
+    expect(within(rows[59]).getByRole("button", { name: /Qg2#/ })).toBeInTheDocument();
+  });
+});
+
+describe("coach card commentary for the selected move", () => {
+  it("explains an error and suggests the better move, while the list itself stays plain", () => {
+    const { moves } = reviewedMoves("1. e4 e5 2. Nf3 Nc6 *");
+    const blunder = { ...moves[1], primaryClassification: "blunder" as const, bestMove: "c7c5", uci: "e7e5", evalBefore: { cp: 20 }, evalAfter: { cp: -300 } };
+    const { container } = render(<><MoveList moves={[moves[0], blunder]} selectedPly={0} onSelect={vi.fn()}/><AnalysisPanel move={blunder}/></>);
+    expect(screen.getByText(/e5 là một nước sai lầm ngớ ngẩn\./)).toBeInTheDocument();
+    expect(screen.getByText("Nước tốt hơn là c5")).toBeInTheDocument();
+    // The list only holds moves: no verdict sentences.
+    expect(container.querySelector(".move-list")?.textContent).not.toMatch(/là nước đi|là một/);
   });
 });

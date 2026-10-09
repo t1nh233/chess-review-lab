@@ -58,7 +58,7 @@ describe("StockfishClient lifecycle", () => {
     expect(worker.posted).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "INITIALIZE" }),
       { type: "COMMAND", command: "uci" },
-      { type: "COMMAND", command: "setoption name Hash value 64" },
+      { type: "COMMAND", command: "setoption name Hash value 128" },
       { type: "COMMAND", command: "ucinewgame" },
       { type: "COMMAND", command: "isready" },
     ]));
@@ -207,5 +207,35 @@ describe("StockfishClient lifecycle", () => {
     await client.initialize("SAFE_IMPORTED_PGN");
     expect(second.posted).toContainEqual({ type: "COMMAND", command: "uci" });
     client.dispose();
+  });
+});
+
+describe("StockfishClient search queue", () => {
+  it("queues a new search behind an aborted one instead of failing with 'already analyzing'", async () => {
+    const worker = new FakeWorker();
+    handshake(worker);
+    const client = clientFor(worker, 1000, 3000);
+    await client.initialize("SAFE_IMPORTED_PGN");
+    const goCommands: string[] = [];
+    const infoLine = "info depth 10 seldepth 12 multipv 1 score cp 20 nodes 1000 nps 100000 pv e2e4 e7e5";
+    const base = worker.onPost;
+    worker.onPost = (message) => {
+      base?.(message);
+      if (message.type === "COMMAND" && message.command.startsWith("go ")) goCommands.push(message.command);
+    };
+    const first = new AbortController();
+    const firstResult = client.analyze({ fen: "8/8/8/8/8/8/8/K1k5 w - - 0 1", depth: 5 }, first.signal);
+    await Promise.resolve(); await Promise.resolve();
+    first.abort();
+    const second = client.analyze({ fen: "8/8/8/8/8/8/8/K1k5 b - - 0 1", depth: 5 });
+    const settled = expect(firstResult).rejects.toMatchObject({ name: "AbortError" });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(goCommands).toHaveLength(1); // the second search has not started while the first is still stopping
+    worker.emit({ type: "LINE", line: infoLine }); worker.emit({ type: "LINE", line: "bestmove e2e4" });
+    await settled;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    expect(goCommands).toHaveLength(2);
+    worker.emit({ type: "LINE", line: infoLine }); worker.emit({ type: "LINE", line: "bestmove e7e5" });
+    await expect(second).resolves.toMatchObject({ bestMove: "e7e5" });
   });
 });

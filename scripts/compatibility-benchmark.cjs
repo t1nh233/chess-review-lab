@@ -4,7 +4,7 @@ const { Chess } = require("chess.js");
 const initEngine = require("stockfish");
 
 const fixture = path.resolve("tests/fixtures/chesscom-low-rating-001.pgn");
-const enginePath = path.resolve("node_modules/stockfish/bin/stockfish-18-lite-single.js");
+const enginePath = path.resolve("node_modules/stockfish/bin/stockfish-18-single.js");
 const depth = Number(process.env.COMPATIBILITY_DEPTH || 12);
 const references = new Map(Object.entries({
   "6...Be6":"Blunder", "7.Nxe6":"Great", "11.Bxe7":"Inaccuracy", "14.Rd1":"Inaccuracy", "14...Nd4":"Mistake", "15.e3":"Inaccuracy", "17.Ne7+":"Mistake", "19.cxd5":"Mistake", "19...Be5":"Inaccuracy", "21.g3":"Mistake", "21...Rhe8":"Inaccuracy", "22.Bg2":"Inaccuracy", "24.Bf3":"Blunder", "24...Rxe3+":"Great", "25...Ra3":"Inaccuracy", "26.Ra1":"Mistake", "28.Rhd1":"Mistake", "28...Bxa1":"Great", "30...Ree3":"Inaccuracy", "31...h5":"Inaccuracy", "32.Rd1":"Mistake", "35.h3":"Mistake", "43.Rxa5":"Inaccuracy", "53.Kg3":"Mistake",

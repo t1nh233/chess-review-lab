@@ -5,6 +5,7 @@ describe("review navigation", () => {
   it.each([
     ["?view=previous", "previous"],
     ["?view=settings", "settings"],
+    ["?view=games", "games"],
     ["?view=review", "import"],
     ["?import=1", "import"],
     ["?view=unexpected", "import"],

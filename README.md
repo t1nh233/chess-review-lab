@@ -1,6 +1,6 @@
 # Chess Review Lab
 
-Chess Review Lab is an original Microsoft Edge Manifest V3 extension for local, post-game chess review. It accepts completed Chess.com games, pasted PGN, and uploaded `.pgn` files. Analysis runs in the browser with the locally packaged Stockfish 18 WebAssembly engine; there is no backend, account, telemetry, analytics, or cloud engine.
+Chess Review Lab is an original Microsoft Edge Manifest V3 extension for local, post-game chess review. It accepts finished Chess.com games (picked from your public game list or the current page), pasted PGN, and uploaded `.pgn` files. Analysis runs in the browser with the locally packaged Stockfish 18 NNUE WebAssembly engine; there is no backend, account, telemetry, analytics, or cloud engine. The only network calls are reads of Chess.com's public archive (`api.chess.com/pub`).
 
 ## Features
 
@@ -8,12 +8,16 @@ Chess Review Lab is an original Microsoft Edge Manifest V3 extension for local, 
 - Legal PGN parsing with headers, comments, castling, promotion, en passant, check, and mate
 - Board navigation, last-move highlight, optional best-move arrow, and White/Black orientation
 - Interactive keyboard-operable evaluation graph and classification badges
-- Best, Excellent, Good, Inaccuracy, Mistake, and Blunder classification
-- transparent Great, Brilliant, and missed-opportunity heuristics
+- Chess.com-style Game Review categories (Brilliant, Great, Book, Best, Excellent, Good, Inaccuracy, Mistake, Miss, Blunder) with a brief and a detailed summary view
+- transparent Great, Brilliant, Book (from the PGN's `ECOUrl`), and missed-opportunity heuristics
+- game list from your Chess.com username: pick any finished game, switch games from the review page, and a toolbar badge when a new game ends
+- two-column move list with piece figurines and time spent per move (from PGN clock comments)
+- dark (default), light, and system themes
 - mover-relative Expected Points and deterministic Estimated Accuracy
 - two-stage progressive results, real UCI depth streaming, selection-prioritized refinement, cancellation, and worker failure recovery
 - IndexedDB review cache with versioned keys, retention, previous-review list, and deletion
 - Fast Review (depth 16), Compatibility Review (depth 20), and Deep Review (depth 22) presets
+- searches are queued, so stepping quickly through moves never reports "already analyzing"
 - clean and annotated PGN copy/download with round-trip-safe CRL comments
 - fail-closed live-game guard enforced in the popup, Chess.com adapter, service worker, pipeline, engine client, and worker
 
@@ -33,7 +37,7 @@ The domain layer is independent of React:
 
 The toolbar popup is the primary lightweight review client. Durable work follows `popup -> service worker coordinator -> offscreen document -> Stockfish Web Worker`, so closing the popup does not cancel or restart an authorized analysis. The popup reconnects to a compact session summary; the full review is persisted by analysis ID and opened only when **Xem phân tích sâu** is requested.
 
-The popup intentionally presents six Vietnamese labels. Internally the richer `best` / `excellent` / `good` / `inaccuracy` / `mistake` / `blunder` model, engine rank, Expected Points loss, evidence, and tags remain unchanged for deep review and compatibility work. Presentation precedence is Brilliant, Great, Blunder, Missed Opportunity, Mistake/Inaccuracy, then Best/Excellent/Good. Consequently, the displayed **Tốt nhất** tier is a compact quality grouping and does not claim every such move was Stockfish PV1.
+The popup shows the accuracy summary only; the move list, per-move commentary, evaluation graph, and game switching live on the review page. Labels follow Chess.com's Game Review in Vietnamese. The summary table defaults to the brief rows (Great, Best, Excellent, Mistake, Miss, Blunder, plus Brilliant when present) and expands to all ten categories. Presentation precedence is Book, Brilliant, Great, Blunder, Miss, Mistake, Inaccuracy, then Best/Excellent/Good.
 
 The offscreen host owns the engine client for popup-started analysis. The client creates a module worker, which creates the locally packaged Stockfish worker. Expensive search never executes on the UI thread. Visiting Chess.com alone never starts the engine.
 
@@ -141,11 +145,15 @@ Automatic extraction uses only legitimately available public page content and is
 
 ## Known limitations
 
-- Chess.com markup can change; automatic extraction can fail and manual PGN import is always available.
+- Chess.com markup can change; page scraping is best-effort. Completion is also verified through the public archive, which lists finished games only, and manual PGN import is always available.
 - The conservative completion detector may classify an unfamiliar completed page as `UNKNOWN` rather than risk live assistance.
-- The packaged lite single-threaded Stockfish 18 WASM is approximately 7.3 MB. It is substantially smaller and faster to load than the full 113 MB build, but evaluates less strongly; the configured review depths remain suitable for local post-game review.
+- The packaged Stockfish 18 build is the full NNUE single-threaded WASM (~113 MB, no SharedArrayBuffer needed). It is the strongest engine that runs in a stock MV3 extension, but loads slower than the former 7 MB lite build and uses more memory (Hash 128 MB).
 - No cloud synchronization is provided; cached reviews stay in the current Edge profile and are retained up to the configured local limit.
 - Browser/Edge unpacked-extension acceptance must be performed on a desktop environment that permits loading extensions; automated tests do not replace that manual check.
+
+## Credits
+
+Piece artwork: cburnett set from the Lichess chessground assets (GPL-3.0-or-later).
 
 ## Licenses
 

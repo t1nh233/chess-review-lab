@@ -2,7 +2,7 @@ import type { ParsedGame } from "../chess/pgn";
 import type { EngineLine, NormalizedEval } from "../engine/engineTypes";
 
 export type PrimaryClassification = "brilliant" | "great" | "best" | "excellent" | "good" | "inaccuracy" | "mistake" | "blunder";
-export type MoveTag = "missed_opportunity" | "only_move" | "forced" | "sacrifice" | "mate" | "game_ending";
+export type MoveTag = "missed_opportunity" | "only_move" | "forced" | "sacrifice" | "mate" | "game_ending" | "book";
 
 export interface PositionReview {
   fen: string;
@@ -22,6 +22,7 @@ export interface ClassificationEvidence {
 }
 export interface MoveReview {
   ply: number; moveNumber: number; color: "white" | "black"; san: string; uci: string; fenBefore: string; fenAfter: string;
+  clockSeconds?: number; spentSeconds?: number;
   evalBefore: NormalizedEval; evalAfter: NormalizedEval;
   expectedPointsBefore: number; expectedPointsAfter: number; expectedPointsLoss: number;
   estimatedAccuracy: number; accuracyWeight: number;
