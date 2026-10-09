@@ -11,6 +11,7 @@ Chess Review Lab bundles or includes production code from the packages below. Th
 | React | 19.1.1 | MIT | UI runtime |
 | React DOM | 19.1.1 | MIT | DOM renderer |
 | scheduler | 0.26.0 | MIT | React runtime dependency |
+| cburnett chess piece SVGs (via Lichess chessground assets) | n/a | GPL-3.0-or-later (Colin M.L. Burnett, tri-licensed GFDL/BSD/GPL) | `dist/pieces/*.svg` |
 
 ## Stockfish distribution obligations
 
@@ -24,5 +25,3 @@ Anyone redistributing a modified engine build must make the complete correspondi
 ## Permissive dependencies
 
 The BSD-2-Clause, ISC, and MIT license texts shipped in `dist/licenses/` must remain with redistributed copies where their terms require preservation of copyright and permission notices. Exact notices are copied from the installed, lockfile-pinned packages during `npm run build`.
-
-| cburnett chess piece SVGs (via Lichess chessground assets) | n/a | GPL-3.0-or-later (Colin M.L. Burnett, tri-licensed GFDL/BSD/GPL) | `dist/pieces/*.svg` |
