@@ -70,9 +70,10 @@ describe("completed-game PGN acquisition", () => {
   it("reports propagation delay as pending, then unavailable after bounded retries", async () => {
     const fetchFn = vi.fn(async () => new Response(JSON.stringify({ games: [] }), { status: 200 }));
     const sleep = vi.fn(async () => undefined);
+    const midMonth = () => Date.UTC(2026, 5, 15); // fixed clock: the early-month previous-archive fallback must not make this test date-dependent
     const identity = { gameId: "123", url: "https://www.chess.com/game/live/123", whiteUsername: "Alice" };
-    await expect(acquireCompletedGamePgn(identity, { fetchFn, attempt: 0, maxAttempts: 4 })).resolves.toEqual({ status: "pending" });
-    await expect(acquireCompletedGamePgnWithRetry(identity, { fetchFn, retryDelaysMs: [1, 2, 3], sleep })).resolves.toMatchObject({ status: "unavailable" });
+    await expect(acquireCompletedGamePgn(identity, { fetchFn, now: midMonth, attempt: 0, maxAttempts: 4 })).resolves.toEqual({ status: "pending" });
+    await expect(acquireCompletedGamePgnWithRetry(identity, { fetchFn, now: midMonth, retryDelaysMs: [1, 2, 3], sleep })).resolves.toMatchObject({ status: "unavailable" });
     expect(fetchFn).toHaveBeenCalledTimes(5);
     expect(sleep).toHaveBeenCalledTimes(3);
   });

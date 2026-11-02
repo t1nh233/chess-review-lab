@@ -19,6 +19,7 @@ npm run test:unit | test:integration | test:safety
 npm run build                # vite build -> dist/ (the unpacked extension)
 npm run test:stockfish       # smoke-tests the engine files in dist/ (build first)
 npm run validate:dist        # validate dist after every production build
+npm run package:store        # zip dist/ -> release/chess-review-lab-<version>.zip for Edge Add-ons (fails if >50 MB)
 npm run verify:release       # full fail-fast gate: typecheck, lint, tests, build, stockfish, validate
 npm run benchmark:analysis   # env: BENCHMARK_PGN, BENCHMARK_DEPTH, BENCHMARK_STRATEGY=legacy|optimized|selective
 ```
@@ -42,6 +43,10 @@ Conventions that span files:
 - Versions/cache keys live in `src/config/versions.ts`; bump them when changing analysis output so cached reviews invalidate.
 - PGN export (`src/chess/pgnExport.ts`): clean PGN preserves the source; analysis PGN adds round-trip-safe `[%crl_*]` comments. Imported CRL comments are historical only; re-analysis always runs the engine.
 
+## UI skin (hand-painted "Ghibli summer" look)
+
+Design source of truth: the Claude Design canvas "Chess Review Lab" (tokens, mascot "Tốt", ten move symbols). Shared skin is `src/ghibli.css` (tokens, buttons, cards, popup); review-page-only overrides live in `src/ghibli-review.css` and must be imported after `chesscom.css` (Vite hoists shared CSS ahead of entry-only CSS, so review rules in the shared file lose to `chesscom.css`). Fonts are bundled locally (Nunito body, Patrick Hand headings; OFL licenses copied to `dist/licenses/`). All copy is in `src/i18n/vi.ts`. The mascot is `src/components/Mascot.tsx` (moods happy/think/sleepy/sad/cheer/mini); the ten move symbols are drawn in `src/presentation/classificationIcons.tsx` (each category has a distinct silhouette, so colour is never the only cue). Extension icons in `public/icons` and the store logo in `docs/store/assets` are renders of the mascot. Keep text contrast at WCAG AA (never put text on the grass/light-blue classification colours).
+
 ## Game list and completion detection
 
 `src/adapters/chessCom/latestGame.ts` lists a player's finished games from the public archive (one month per page). The popup and the review page's "Ván đấu" view share `src/popup/LatestGameCard.tsx`; the saved username lives in `src/storage/chessComProfile.ts`; `src/background/latestGameWatcher.ts` polls once a minute via `chrome.alarms` and sets a "NEW" badge. Page-based completion detection is unreliable, so `serviceWorker.ts` also accepts a game as finished when its id is found in the archive (`archiveVerifiedSnapshot`).
@@ -52,4 +57,4 @@ Conventions that span files:
 
 ## Licensing
 
-Stockfish is GPL-3.0; keep `dist/engine/COPYING.txt` and `dist/licenses/` in builds (see `LICENSES_THIRD_PARTY.md`).
+The project is GPL-3.0 (`LICENSE`) because it distributes Stockfish; the repo must stay public for store distribution. Store listing text and permission justifications: `docs/store/LISTING.md`; privacy policy: `docs/PRIVACY_POLICY.md`. Stockfish is GPL-3.0; keep `dist/engine/COPYING.txt` and `dist/licenses/` in builds (see `LICENSES_THIRD_PARTY.md`).

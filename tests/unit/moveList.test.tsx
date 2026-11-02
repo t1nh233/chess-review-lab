@@ -32,7 +32,7 @@ describe("Deep Review full-move list", () => {
   it("renders same-number White and Black moves on one row without repeated notation", () => {
     const { moves } = reviewedMoves();
     render(<MoveList moves={moves} selectedPly={0} onSelect={vi.fn()}/>);
-    const table = screen.getByRole("table", { name: "Analyzed moves" });
+    const table = screen.getByRole("table", { name: "Các nước đã phân tích" });
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(2);
     expect(within(rows[1]).getByRole("rowheader")).toHaveTextContent("1");
@@ -43,10 +43,10 @@ describe("Deep Review full-move list", () => {
 
   it("selects White and Black cells independently and synchronizes board and analysis panel", () => {
     render(<SelectionHarness/>);
-    fireEvent.click(screen.getByRole("button", { name: /Move 1 white, e4/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Nước 1 Trắng, e4/ }));
     expect(screen.getByRole("gridcell", { name: "e4 P" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "e4" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: /Move 1 black, e5/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Nước 1 Đen, e5/ }));
     expect(screen.getByRole("gridcell", { name: "e5 p" })).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "e5" })).toBeInTheDocument();
   });
@@ -55,7 +55,7 @@ describe("Deep Review full-move list", () => {
     const { moves } = reviewedMoves("1. e4 e5 *");
     const longMoves = Array.from({ length: 118 }, (_, index) => ({ ...moves[index % 2], ply: index + 1, moveNumber: Math.floor(index / 2) + 1, color: (index % 2 ? "black" : "white") as "white" | "black", san: index === 116 ? "Kg1" : index === 117 ? "Qg2#" : `m${index + 1}` }));
     render(<MoveList moves={longMoves} selectedPly={0} onSelect={vi.fn()}/>);
-    const table = screen.getByRole("table", { name: "Analyzed moves" });
+    const table = screen.getByRole("table", { name: "Các nước đã phân tích" });
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(60);
     expect(within(table).getAllByRole("button")).toHaveLength(118);

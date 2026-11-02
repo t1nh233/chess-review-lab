@@ -20,14 +20,14 @@ export function MoveList({ moves, selectedPly, onSelect, openingName }: { moves:
     if (box.top < listBox.top) list.scrollTop -= listBox.top - box.top + 4;
     else if (box.bottom > listBox.bottom) list.scrollTop += box.bottom - listBox.bottom + 4;
   }, [selectedPly]);
-  const cell = (move?: MoveReview) => <div className="deep-move-cell" role="cell">{move ? <button className={selectedPly === move.ply ? "move selected" : "move"} onClick={() => onSelect(move.ply)} aria-label={`Move ${move.moveNumber} ${move.color}, ${move.san}, ${move.primaryClassification}`} aria-pressed={selectedPly === move.ply}>
+  const cell = (move?: MoveReview) => <div className="deep-move-cell" role="cell">{move ? <button className={selectedPly === move.ply ? "move selected" : "move"} onClick={() => onSelect(move.ply)} aria-label={`Nước ${move.moveNumber} ${move.color === "white" ? "Trắng" : "Đen"}, ${move.san}, ${move.primaryClassification}`} aria-pressed={selectedPly === move.ply}>
     <span className="san"><San san={move.san}/></span><MoveBadge classification={move.primaryClassification} tags={move.tags} compact/>
   </button> : null}</div>;
   return <div className="move-list-wrap">
     {openingName && <div className="opening-name" title="Khai cuộc">{openingName}</div>}
     <button className={selectedPly === 0 ? "move-start selected" : "move-start"} onClick={() => onSelect(0)} aria-pressed={selectedPly === 0}>Vị trí ban đầu</button>
-    <div className={hasTimes ? "move-list with-times" : "move-list"} role="table" aria-label="Analyzed moves" ref={listRef}>
-      <div className="deep-move-header" role="row"><b>#</b><b>White</b><b>Black</b>{hasTimes && <b className="time-head">Thời gian</b>}</div>
+    <div className={hasTimes ? "move-list with-times" : "move-list"} role="table" aria-label="Các nước đã phân tích" ref={listRef}>
+      <div className="deep-move-header" role="row"><b>#</b><b>Trắng</b><b>Đen</b>{hasTimes && <b className="time-head">Thời gian</b>}</div>
       {rows.map((row) => <div className="deep-move-row" role="row" key={row.moveNumber}>
         <span className="move-number" role="rowheader">{row.moveNumber}</span>{cell(row.white)}{cell(row.black)}
         {hasTimes && <TimeCell white={row.white?.spentSeconds} black={row.black?.spentSeconds} max={maxSpent}/>}

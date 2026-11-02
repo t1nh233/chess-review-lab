@@ -4,13 +4,15 @@ Chess Review Lab bundles or includes production code from the packages below. Th
 
 | Software | Version | License | Use |
 | --- | --- | --- | --- |
-| Stockfish / stockfish.js | 18.0.8 (Stockfish 18 full NNUE single-thread build) | GNU GPL v3 | Local chess engine, JavaScript loader, and WebAssembly binary |
+| Stockfish / stockfish.js | 18.0.8 (Stockfish 18 lite single-thread build) | GNU GPL v3 | Local chess engine, JavaScript loader, and WebAssembly binary |
 | chess.js | 1.4.0 | BSD 2-Clause | PGN parsing and legal move generation |
 | idb | 8.0.3 | ISC | IndexedDB promise wrapper |
 | lucide-react | 0.542.0 | ISC | UI icons |
 | React | 19.1.1 | MIT | UI runtime |
 | React DOM | 19.1.1 | MIT | DOM renderer |
 | scheduler | 0.26.0 | MIT | React runtime dependency |
+| Patrick Hand (@fontsource/patrick-hand) | 5.3.0 | SIL OFL 1.1 | Hand-drawn heading typeface, bundled locally as WOFF2 |
+| Nunito (@fontsource-variable/nunito) | 5.3.0 | SIL OFL 1.1 | UI typeface, bundled locally as WOFF2 (`dist/assets/*.woff2`) |
 | cburnett chess piece SVGs (via Lichess chessground assets) | n/a | GPL-3.0-or-later (Colin M.L. Burnett, tri-licensed GFDL/BSD/GPL) | `dist/pieces/*.svg` |
 
 ## Stockfish distribution obligations

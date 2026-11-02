@@ -7,9 +7,9 @@ const move = (primaryClassification: PrimaryClassification, tags: MoveTag[] = []
 describe("display classification (Chess.com Game Review categories)", () => {
   it.each([
     ["brilliant", [], "brilliant", "Thiên tài"], ["great", [], "great", "Tuyệt"], ["best", [], "best", "Tốt nhất"],
-    ["excellent", [], "excellent", "Tuyệt vời"], ["good", [], "good", "Tốt"], ["inaccuracy", [], "inaccuracy", "Không chính xác"],
-    ["mistake", [], "mistake", "Sai lầm"], ["good", ["missed_opportunity"], "miss", "Bỏ lỡ"], ["blunder", [], "blunder", "Nước sai lầm ngớ ngẩn"],
-    ["best", ["book"], "book", "Chủ đề sách"], ["excellent", ["book"], "book", "Chủ đề sách"],
+    ["excellent", [], "excellent", "Xuất sắc"], ["good", [], "good", "Tốt"], ["inaccuracy", [], "inaccuracy", "Thiếu chính xác"],
+    ["mistake", [], "mistake", "Sai lầm"], ["good", ["missed_opportunity"], "miss", "Bỏ lỡ"], ["blunder", [], "blunder", "Sai nghiêm trọng"],
+    ["best", ["book"], "book", "Khai cuộc"], ["excellent", ["book"], "book", "Khai cuộc"],
   ] as const)("maps %s %j to %s", (internal, tags, expected, label) => {
     const display = toDisplayClassification(move(internal, [...tags]));
     expect(display).toBe(expected); expect(DISPLAY_CLASSIFICATION_LABELS[display]).toBe(label);

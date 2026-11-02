@@ -2,7 +2,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const enginePath = path.resolve(process.env.STOCKFISH_ENGINE_PATH || "dist/engine/stockfish-18-single.js");
+const enginePath = path.resolve(process.env.STOCKFISH_ENGINE_PATH || "dist/engine/stockfish-18-lite-single.js");
 const wasmPath = enginePath.replace(/\.js$/, ".wasm");
 if (!fs.existsSync(enginePath) || !fs.existsSync(wasmPath)) throw new Error("Build Stockfish artifacts are missing. Run npm run build first.");
 

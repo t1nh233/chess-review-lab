@@ -39,12 +39,24 @@ for (const [size, icon] of Object.entries(manifest.icons ?? {})) {
 }
 for (const script of manifest.content_scripts ?? []) for (const file of script.js ?? []) requireFile(file);
 for (const required of [
-  "review.html", "offscreen.html", "engine/stockfishWorker.js", "engine/stockfish-18-single.js",
-  "engine/stockfish-18-single.wasm", "engine/COPYING.txt", "LICENSES_THIRD_PARTY.md",
+  "review.html", "offscreen.html", "engine/stockfishWorker.js", "engine/stockfish-18-lite-single.js",
+  "engine/stockfish-18-lite-single.wasm", "engine/COPYING.txt", "LICENSES_THIRD_PARTY.md",
   "licenses/chess.js-BSD-2-Clause.txt", "licenses/idb-ISC.txt", "licenses/lucide-react-ISC.txt",
-  "licenses/react-MIT.txt", "licenses/react-dom-MIT.txt", "licenses/scheduler-MIT.txt",
+  "licenses/react-MIT.txt", "licenses/react-dom-MIT.txt", "licenses/scheduler-MIT.txt", "licenses/nunito-OFL-1.1.txt", "licenses/patrick-hand-OFL-1.1.txt",
+  "_locales/vi/messages.json",
 ]) requireFile(required);
-if (fs.existsSync(path.join(root, "engine/stockfish-18-lite-single.wasm"))) failures.push("Obsolete lite Stockfish artifacts must not be included.");
+const wasmFile = path.join(root, "engine/stockfish-18-lite-single.wasm");
+const wasmSize = fs.existsSync(wasmFile) ? fs.statSync(wasmFile).size : 0;
+if (wasmSize > 20 * 1024 * 1024) failures.push(`Engine WASM is ${(wasmSize / 1048576).toFixed(1)} MB; the store build must use the lite engine (<20 MB).`);
+if (fs.existsSync(path.join(root, "engine/stockfish-18-single.wasm"))) failures.push("Full Stockfish WASM must not be included in the store build.");
+
+const localeFile = manifest.default_locale ? path.join(root, "_locales", manifest.default_locale, "messages.json") : "";
+if (manifest.default_locale && !fs.existsSync(localeFile)) failures.push(`Missing _locales/${manifest.default_locale}/messages.json.`);
+else if (manifest.default_locale) {
+  const messages = JSON.parse(fs.readFileSync(localeFile, "utf8"));
+  for (const match of JSON.stringify(manifest).matchAll(/__MSG_(\w+)__/g)) if (!messages[match[1]]) failures.push(`Missing locale message: ${match[1]}`);
+}
+for (const field of ["author", "homepage_url", "default_locale"]) if (!manifest[field]) failures.push(`Store manifest is missing ${field}.`);
 
 for (const htmlName of [manifest.action?.default_popup, "review.html", "offscreen.html"].filter(Boolean)) {
   const html = fs.readFileSync(path.join(root, htmlName), "utf8");

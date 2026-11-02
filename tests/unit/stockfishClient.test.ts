@@ -58,7 +58,7 @@ describe("StockfishClient lifecycle", () => {
     expect(worker.posted).toEqual(expect.arrayContaining([
       expect.objectContaining({ type: "INITIALIZE" }),
       { type: "COMMAND", command: "uci" },
-      { type: "COMMAND", command: "setoption name Hash value 128" },
+      { type: "COMMAND", command: "setoption name Hash value 64" },
       { type: "COMMAND", command: "ucinewgame" },
       { type: "COMMAND", command: "isready" },
     ]));

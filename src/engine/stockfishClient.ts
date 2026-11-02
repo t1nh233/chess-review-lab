@@ -35,7 +35,7 @@ export class StockfishClient implements ChessEngine {
     this.dispose();
     this.safetyState = safetyState;
     const workerUrl = chrome.runtime.getURL("engine/stockfishWorker.js");
-    const engineUrl = chrome.runtime.getURL("engine/stockfish-18-single.js");
+    const engineUrl = chrome.runtime.getURL("engine/stockfish-18-lite-single.js");
     this.worker = this.workerFactory(workerUrl, { type: "module" });
     this.worker.onmessage = (event: MessageEvent<EngineWorkerOutput>) => this.handleMessage(event.data);
     this.worker.onerror = () => this.failWorker(new Error("Stockfish worker failed."));
@@ -46,7 +46,7 @@ export class StockfishClient implements ChessEngine {
       const uciReady = this.waitFor((line) => line === "uciok", this.startupTimeoutMs, "Stockfish UCI handshake timed out.");
       this.command("uci");
       await uciReady;
-      this.command("setoption name Hash value 128");
+      this.command("setoption name Hash value 64");
       this.command("ucinewgame");
       const engineReady = this.waitFor((line) => line === "readyok", this.startupTimeoutMs, "Stockfish readiness check timed out.");
       this.command("isready");

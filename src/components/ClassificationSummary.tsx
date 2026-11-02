@@ -28,10 +28,10 @@ export function ClassificationSummary({ whiteName, blackName, whiteAccuracy, bla
   const hasBrilliant = counts.white.brilliant + counts.black.brilliant > 0;
   const rows = mode === "full" ? DISPLAY_CLASSIFICATIONS : DISPLAY_CLASSIFICATIONS.filter((classification) => BRIEF_CLASSIFICATIONS.includes(classification) || (classification === "brilliant" && hasBrilliant));
   return <div className={`classification-summary classification-summary-${mode}`}>
-    <table aria-label="Classification summary">
-      <thead><tr><th scope="col"><span className="sr-only">Category</span></th><th scope="col"><span>White</span>{whiteName}</th><th scope="col"><span className="sr-only">Icon</span></th><th scope="col"><span>Black</span>{blackName}</th></tr></thead>
+    <table aria-label="Tóm tắt phân loại nước đi">
+      <thead><tr><th scope="col"><span className="sr-only">Loại nước đi</span></th><th scope="col"><span>Trắng</span>{whiteName}</th><th scope="col"><span className="sr-only">Biểu tượng</span></th><th scope="col"><span>Đen</span>{blackName}</th></tr></thead>
       <tbody>
-        <tr className="accuracy-row"><th scope="row">Độ chính xác <small>Estimated Accuracy</small></th><td><span className="accuracy-box accuracy-white">{score(whiteAccuracy)}</span></td><td/><td><span className="accuracy-box accuracy-black">{score(blackAccuracy)}</span></td></tr>
+        <tr className="accuracy-row"><th scope="row">Độ chính xác <small>ước tính</small></th><td><span className="accuracy-box accuracy-white">{score(whiteAccuracy)}</span></td><td/><td><span className="accuracy-box accuracy-black">{score(blackAccuracy)}</span></td></tr>
         {rows.map((classification) => {
           const meta = DISPLAY_CLASSIFICATION_META[classification];
           return <tr key={classification} data-classification={classification} className={`count-${classification}`}>

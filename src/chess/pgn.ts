@@ -56,7 +56,7 @@ function attachClocks(moves: GameMove[], pgn: string, control: string | undefine
 
 export function parsePgn(pgn: string): ParsedGame {
   const trimmed = pgn.trim();
-  if (!trimmed) throw new Error("Paste or choose a PGN before importing.");
+  if (!trimmed) throw new Error("Hãy dán hoặc chọn một PGN trước khi nhập.");
   try {
     const game = new Chess();
     game.loadPgn(trimmed, { strict: false });
@@ -78,7 +78,7 @@ export function parsePgn(pgn: string): ParsedGame {
         fenAfter: replay.fen(),
       });
     }
-    if (!moves.length) throw new Error("The PGN does not contain any moves.");
+    if (!moves.length) throw new Error("PGN này chưa có nước đi nào.");
     attachClocks(moves, trimmed, headers.TimeControl);
     const result = headers.Result && headers.Result !== "*" ? headers.Result : undefined;
     return {
@@ -87,8 +87,10 @@ export function parsePgn(pgn: string): ParsedGame {
       startingFen: start, pgn: trimmed,
     };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown parser error";
-    throw new Error(`This PGN could not be parsed. ${message}`);
+    const raw = error instanceof Error ? error.message : "";
+    const invalid = /Invalid move in PGN: (.+)/.exec(raw);
+    const detail = invalid ? `Nước đi không hợp lệ: ${invalid[1]}.` : raw.startsWith("Move replay") ? "Không phát lại được các nước đi." : "";
+    throw new Error(`Không đọc được PGN này. ${detail}`.trim());
   }
 }
 

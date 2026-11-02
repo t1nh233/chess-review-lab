@@ -15,7 +15,7 @@ export function EvaluationChart({ moves, selectedPly, onSelect }: { moves: MoveR
     const ratio = Math.min(1, Math.max(0, (event.clientX - box.left) / box.width));
     onSelect(moves[Math.round(ratio * (moves.length - 1))].ply);
   };
-  return <div className="chart-wrap"><svg className="chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Evaluation graph" onPointerDown={select} onPointerMove={(event) => { if (event.buttons === 1) select(event); }}>
+  return <div className="chart-wrap"><svg className="chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-label="Biểu đồ đánh giá" onPointerDown={select} onPointerMove={(event) => { if (event.buttons === 1) select(event); }}>
     <polygon points={area} className="chart-area"/>
     <line x1="0" y1="50" x2="100" y2="50" className="chart-zero"/>
     <polyline points={line} className="chart-line"/>
@@ -25,7 +25,7 @@ export function EvaluationChart({ moves, selectedPly, onSelect }: { moves: MoveR
       const notable = ["brilliant", "great", "inaccuracy", "mistake", "miss", "blunder"].includes(kind);
       return <circle key={move.ply} cx={x(i)} cy={y(move)} r={selectedPly === move.ply ? 2.6 : notable ? 1.7 : 0.9}
         className={`chart-point${selectedPly === move.ply ? " active" : ""}${notable ? ` notable notable-${kind}` : ""}`}
-        role="button" tabIndex={0} aria-label={`Select move ${move.moveNumber}${move.color === "black" ? "..." : "."}${move.san}`}
+        role="button" tabIndex={0} aria-label={`Chọn nước ${move.moveNumber}${move.color === "black" ? "..." : "."}${move.san}`}
         onClick={(event) => { event.stopPropagation(); onSelect(move.ply); }}
         onPointerDown={(event) => event.stopPropagation()}
         onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); onSelect(move.ply); } }}/>;

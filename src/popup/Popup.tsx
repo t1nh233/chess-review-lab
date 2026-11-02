@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
-import { FileUp, FolderOpen, Search, Settings, Square } from "lucide-react";
+import { FolderOpen, Lock, Settings } from "lucide-react";
 import type { ChessComPageSnapshot } from "../adapters/chessCom/pageAdapter";
 import { parsePgn } from "../chess/pgn";
-import { ClassificationSummary } from "../components/ClassificationSummary";
+import { Mascot, type MascotMood } from "../components/Mascot";
+import { vi } from "../i18n/vi";
+import { ImportPanel } from "./ImportPanel";
+import { PopupSummaryView } from "./PopupSummaryView";
 import { type ReviewSummary } from "./reviewSummary";
 import { exitPopupAnalysis } from "./popupSession";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -13,38 +16,13 @@ type PageState = "loading" | "unsupported" | "completed" | "acquiring" | "pgn_un
 type CompletedResponse = { ok: boolean; summary?: ReviewSummary; cached?: boolean; attached?: boolean; acquisition?: PgnAcquisitionResult; error?: string };
 async function message<T>(value: unknown): Promise<T> { return chrome.runtime.sendMessage(value) as Promise<T>; }
 
-export function PopupSummaryView({ summary, onCancel, onExit, onDeep, deepLabel = "Xem phân tích sâu" }: { summary: ReviewSummary; onCancel: () => void; onExit: () => void; onDeep: (analysisId: string) => void; deepLabel?: string }) {
-  const phaseLabel = summary.phase === "refinement" || summary.phase === "multiPvExpansion" ? "Refining critical moves" : summary.phase === "finalizing" ? "Finalizing" : "Quick analysis";
-  const progressValue = summary.phaseCompleted ?? summary.currentPly;
-  const progressMax = Math.max(1, summary.phaseTotal ?? summary.totalPlies);
-  if (summary.status === "queued" || summary.status === "analyzing") return <main className="popup-summary" aria-label="Analysis progress">
-    <h1>{summary.whiteName} <small>vs</small> {summary.blackName}</h1>
-    <strong>{phaseLabel}{summary.phase !== "finalizing" ? ` ${progressValue} / ${progressMax}` : ""}</strong>
-    {summary.phase === "quick" || !summary.phase ? <small>Analyzing {summary.currentPly} / {summary.totalPlies}</small> : null}
-    <span>depth={summary.currentDepth ?? "initializing"} | Stockfish 18 NNUE</span>
-    <progress value={progressValue} max={progressMax}/>
-    <div className="popup-actions">
-      <button className="secondary" onClick={onCancel}><Square/> Hủy</button>
-      <button className="exit-action" onClick={onExit}>Dừng và thoát</button>
-    </div>
-  </main>;
-  if (summary.status === "completed") return <main className="popup-summary completed-summary">
-    <h1>{summary.whiteName} <small>vs</small> {summary.blackName}</h1>
-    <ClassificationSummary whiteName={summary.whiteName} blackName={summary.blackName} whiteAccuracy={summary.whiteAccuracy} blackAccuracy={summary.blackAccuracy} moves={summary.moves}/>
-    <p className="popup-hint">Danh sách nước đi, lời bình và thời gian từng nước nằm ở trang phân tích chi tiết.</p>
-    <div className="popup-actions popup-actions-completed">
-      <button className="primary" onClick={() => onDeep(summary.analysisId)}>{deepLabel}</button>
-      <button className="secondary" onClick={onExit}>Phân tích ván mới</button>
-    </div>
-  </main>;
-  return <main className="popup-summary"><h1>{summary.status === "cancelled" ? "Analysis cancelled" : "Analysis failed"}</h1><p>{summary.error ?? "You can start the review again."}</p><button className="secondary wide" onClick={onExit}>Phân tích ván mới</button></main>;
-}
+export { PopupSummaryView };
 
 export function Popup() {
   const [pageState, setPageState] = useState<PageState>("loading"); const [snapshot, setSnapshot] = useState<ChessComPageSnapshot | null>(null);
   const [activeTabId, setActiveTabId] = useState<number | null>(null);
   const [reopeningExisting, setReopeningExisting] = useState(false);
-  const [summary, setSummary] = useState<ReviewSummary | null>(null); const [error, setError] = useState(""); const [showImport, setShowImport] = useState(false); const [pgn, setPgn] = useState(""); const [fileName, setFileName] = useState("");
+  const [summary, setSummary] = useState<ReviewSummary | null>(null); const [error, setError] = useState("");
   const summaryId = summary?.analysisId; const summaryStatus = summary?.status;
   useEffect(() => { void (async () => { const active = await message<{ summary?: ReviewSummary }>({ type: "GET_ACTIVE_ANALYSIS" }); if (active.summary) { setSummary(active.summary); setReopeningExisting(active.summary.status === "completed"); } else await inspect(); })(); }, []);
   useEffect(() => {
@@ -89,35 +67,46 @@ export function Popup() {
     catch { setPageState("unknown"); }
   }
   async function startImported(pgnValue: string) {
-    try { parsePgn(pgnValue); const response = await message<{ ok: boolean; summary?: ReviewSummary; error?: string }>({ type: "START_ANALYSIS", pgn: pgnValue, safetyState: "SAFE_IMPORTED_PGN" }); if (!response.ok || !response.summary) throw new Error(response.error ?? "Unable to start analysis."); setReopeningExisting(Boolean(response.summary.status === "completed")); setSummary(response.summary); setError(""); }
-    catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to start analysis."); }
+    try { parsePgn(pgnValue); const response = await message<{ ok: boolean; summary?: ReviewSummary; error?: string }>({ type: "START_ANALYSIS", pgn: pgnValue, safetyState: "SAFE_IMPORTED_PGN" }); if (!response.ok || !response.summary) throw new Error(response.error ?? vi.popup.startFailed); setReopeningExisting(Boolean(response.summary.status === "completed")); setSummary(response.summary); setError(""); }
+    catch (caught) { setError(caught instanceof Error ? caught.message : vi.popup.startFailed); }
   }
   async function startCompleted() {
-    if (!activeTabId || snapshot?.safetyState !== "SAFE_COMPLETED_GAME") { setError("Unable to verify that the game has ended."); return; }
+    if (!activeTabId || snapshot?.safetyState !== "SAFE_COMPLETED_GAME") { setError(vi.popup.verifyFailed); return; }
     try {
       const response = await message<CompletedResponse>({ type: "START_COMPLETED_ANALYSIS", tabId: activeTabId, expectedGameId: snapshot.completedGame?.gameId });
-      if (!response.summary) { applyCompletedResponse(response); if (!response.ok) throw new Error(response.error ?? "Unable to start analysis."); return; }
+      if (!response.summary) { applyCompletedResponse(response); if (!response.ok) throw new Error(response.error ?? vi.popup.startFailed); return; }
       setReopeningExisting(response.summary.status === "completed"); setSummary(response.summary); setError("");
-    } catch (caught) { setError(caught instanceof Error ? caught.message : "Unable to start analysis."); }
+    } catch (caught) { setError(caught instanceof Error ? caught.message : vi.popup.startFailed); }
   }
   async function retryCompletedPgn() {
     if (!activeTabId) return;
     setError(""); setPageState("acquiring");
     try { applyCompletedResponse(await message<CompletedResponse>({ type: "RETRY_COMPLETED_PGN", tabId: activeTabId, expectedGameId: snapshot?.completedGame?.gameId })); }
-    catch (caught) { setPageState("pgn_unavailable"); setError(caught instanceof Error ? caught.message : "Không thể lấy PGN tự động."); }
+    catch (caught) { setPageState("pgn_unavailable"); setError(caught instanceof Error ? caught.message : vi.popup.retryFailed); }
   }
   async function resetAnalysisContext() {
     if (!summary) return;
     try {
       await exitPopupAnalysis(summary, message);
-      setSummary(null); setReopeningExisting(false); setError(""); setPgn(""); setFileName(""); setShowImport(false); setPageState("loading");
+      setSummary(null); setReopeningExisting(false); setError(""); setPageState("loading");
       await inspect();
     } catch (caught) {
-      setSummary({ ...summary, status: "failed", error: caught instanceof Error ? caught.message : "Could not close analysis." });
+      setSummary({ ...summary, status: "failed", error: caught instanceof Error ? caught.message : vi.popup.closeFailed });
     }
   }
   const openReviewView = (view: "previous" | "settings") => { void chrome.tabs.create({ url: chrome.runtime.getURL(`review.html?view=${view}`) }); window.close(); };
-  if (summary) return <div className="popup"><header><span className="brand-mark">CR</span><div><strong>Chess Review Lab</strong><span>Local post-game analysis</span></div></header><PopupSummaryView summary={summary} onCancel={() => void message({ type: "CANCEL_ANALYSIS", analysisId: summary.analysisId }).then(() => setSummary({ ...summary, status: "cancelled" }))} onExit={() => void resetAnalysisContext()} onDeep={(analysisId) => { void message({ type: "OPEN_ANALYSIS", analysisId }); window.close(); }} deepLabel={reopeningExisting ? "Xem lại phân tích" : undefined}/></div>;
-  const copy: Record<PageState, { title: string; body: string }> = { loading:{title:"Checking this page",body:"Confirming that analysis is safe."},unsupported:{title:"No completed game found",body:"Open a completed Chess.com game, or import a PGN."},completed:{title:"Ván đấu vừa kết thúc",body:"PGN của đúng ván đấu đã sẵn sàng."},acquiring:{title:"Ván đấu vừa kết thúc",body:"Đang lấy PGN của ván đấu..."},pgn_unavailable:{title:"Ván đấu đã kết thúc",body:"Không thể lấy PGN tự động."},live:{title:"Ván đấu đang diễn ra",body:"Analysis is unavailable while a game is in progress."},unknown:{title:"Game status unconfirmed",body:"Unable to confirm this game has ended. If it just finished, wait a few seconds and reopen this popup (reload the Chess.com tab if the extension was just installed), or import the PGN."} };
-  return <div className="popup"><header><span className="brand-mark">CR</span><div><strong>Chess Review Lab</strong><span>Local post-game analysis</span></div></header><main><div className={`status status-${pageState}`}><Search/><div><h1>{copy[pageState].title}</h1><p>{copy[pageState].body}</p></div></div>{error && <p className="popup-error" role="alert">{error}</p>}<LatestGameCard onAnalyze={(latestPgn) => void startImported(latestPgn)}/>{pageState === "completed" && <button className="primary wide" onClick={() => void startCompleted()}>Phân tích ván vừa chơi</button>}{pageState === "pgn_unavailable" && <button className="secondary wide" onClick={() => void retryCompletedPgn()}>Thử lại</button>}<button className="secondary wide" onClick={() => setShowImport((value) => !value)}><FileUp/> {pageState === "pgn_unavailable" ? "Dán PGN" : "Import PGN"}</button>{showImport && <section className="popup-import"><label>PGN<textarea value={pgn} onChange={(event) => setPgn(event.target.value)}/></label><label className="file-picker">{fileName || "Choose .pgn"}<input type="file" accept=".pgn,text/plain" onChange={(event) => { const file = event.target.files?.[0]; if (file) { setFileName(file.name); void file.text().then(setPgn); } }}/></label><button className="primary wide" disabled={!pgn.trim()} onClick={() => void startImported(pgn)}>Analyze imported PGN</button></section>}</main><footer><button onClick={() => openReviewView("previous")}><FolderOpen/> Previous reviews</button><ThemeToggle/><button aria-label="Settings" title="Settings" onClick={() => openReviewView("settings")}><Settings/></button></footer></div>;
+  const header = <header><Mascot mood={summary ? (summary.status === "completed" ? "cheer" : "think") : "happy"} size={36}/><strong className="brand-title">{vi.brand}</strong><button className="ibtn" aria-label={vi.popup.settingsOpen} title={vi.popup.settings} onClick={() => openReviewView("settings")}><Settings/></button></header>;
+  if (summary) return <div className="popup">{header}<PopupSummaryView summary={summary} onCancel={() => void message({ type: "CANCEL_ANALYSIS", analysisId: summary.analysisId }).then(() => setSummary({ ...summary, status: "cancelled" }))} onExit={() => void resetAnalysisContext()} onDeep={(analysisId) => { void message({ type: "OPEN_ANALYSIS", analysisId }); window.close(); }} deepLabel={reopeningExisting ? vi.result.reopen : undefined}/></div>;
+  const copy = vi.popup.status[pageState];
+  const mood: Record<PageState, MascotMood> = { loading: "think", unsupported: "happy", completed: "cheer", acquiring: "think", pgn_unavailable: "sad", live: "think", unknown: "sad" };
+  return <div className="popup">{header}<main>
+    <div className={`status status-${pageState}`} role="status"><Mascot mood={mood[pageState]} size={64}/><div><h1>{copy.title}</h1><p>{copy.body}</p></div></div>
+    {error && <p className="popup-error" role="alert">{error}</p>}
+    {pageState === "completed" && <button className="primary wide" onClick={() => void startCompleted()}>{vi.popup.startJustPlayed}</button>}
+    {pageState === "pgn_unavailable" && <button className="secondary wide" onClick={() => void retryCompletedPgn()}>{vi.popup.retry}</button>}
+    {pageState === "unknown" && <button className="primary wide" onClick={() => { setError(""); setPageState("loading"); void inspect(); }}>{vi.popup.retry}</button>}
+    {pageState === "live" && <><p className="note"><Lock/><span>{vi.popup.liveNote}</span></p><button className="primary wide" disabled>{vi.popup.liveLocked}</button><p className="popup-hint centered">{vi.popup.liveHint}</p></>}
+    <LatestGameCard onAnalyze={(latestPgn) => void startImported(latestPgn)}/>
+    <ImportPanel label={pageState === "pgn_unavailable" ? vi.popup.pastePgn : vi.popup.importPgn} onAnalyze={(value) => void startImported(value)}/>
+  </main><footer><button onClick={() => openReviewView("previous")}><FolderOpen/> {vi.popup.previous}</button><ThemeToggle/></footer></div>;
 }

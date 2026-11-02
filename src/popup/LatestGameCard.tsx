@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { vi } from "../i18n/vi";
 import { History } from "lucide-react";
 import { fetchGamesPage, isValidChessComUsername, type LatestGame } from "../adapters/chessCom/latestGame";
 import { getChessComUsername, latestGameKey, markGameSeen, saveChessComUsername } from "../storage/chessComProfile";
@@ -16,7 +17,7 @@ function outcome(game: LatestGame): "win" | "loss" | "draw" {
   const whiteWon = game.result === "1-0";
   return (whiteWon && game.userColor === "white") || (!whiteWon && game.userColor === "black") ? "win" : "loss";
 }
-const OUTCOME_LABEL = { win: "Thắng", loss: "Thua", draw: "Hòa" } as const;
+const OUTCOME_LABEL = { win: vi.games.win, loss: vi.games.loss, draw: vi.games.draw } as const;
 const timeLabel = (game: LatestGame) => game.timeClass ?? game.timeControl ?? "";
 
 export function LatestGameCard({ onAnalyze }: { onAnalyze: (pgn: string) => void }) {
@@ -40,24 +41,24 @@ export function LatestGameCard({ onAnalyze }: { onAnalyze: (pgn: string) => void
   const save = () => { if (!isValidChessComUsername(draft)) return; void saveChessComUsername(draft).then(() => { setGames([]); setUsername(draft.trim()); }); };
   if (username === null) return null;
   if (!username) return <section className="latest-game">
-    <h2><History/> Danh sách ván đấu</h2>
-    <p>Nhập tên Chess.com để xem các ván đã chơi và chọn ván muốn phân tích.</p>
-    <div className="latest-game-form"><input value={draft} placeholder="Tên Chess.com" aria-label="Chess.com username" onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") save(); }}/><button className="primary" disabled={!isValidChessComUsername(draft)} onClick={save}>Lưu</button></div>
+    <h2><History/> {vi.games.introTitle}</h2>
+    <p>{vi.games.intro}</p>
+    <div className="latest-game-form"><input value={draft} placeholder={vi.games.usernamePlaceholder} aria-label={vi.games.usernameLabel} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") save(); }}/><button className="primary" disabled={!isValidChessComUsername(draft)} onClick={save}>{vi.games.save}</button></div>
   </section>;
   const analyze = (game: LatestGame) => { void markGameSeen(latestGameKey(games[0] ?? game)); void chrome.action.setBadgeText({ text: "" }); onAnalyze(game.pgn); };
   return <section className="latest-game">
-    <h2><History/> Ván đã chơi <button className="link" onClick={() => { void saveChessComUsername("").then(() => { setUsername(""); setGames([]); setNextPage(0); setDraft(username); }); }}>{username} · đổi</button></h2>
-    {status === "error" && <p role="alert">Không thể tải danh sách từ Chess.com. Kiểm tra tên người dùng hoặc thử lại. <button className="link" onClick={() => void load(username, nextPage ?? 0, games.length === 0)}>Thử lại</button></p>}
-    {status === "loading" && games.length === 0 && <p>Đang tải danh sách ván...</p>}
-    {status === "idle" && games.length === 0 && <p>Chưa có ván nào trong kho lưu trữ công khai của tháng này.</p>}
+    <h2><History/> {vi.games.title} <button className="link" onClick={() => { void saveChessComUsername("").then(() => { setUsername(""); setGames([]); setNextPage(0); setDraft(username); }); }}>{username} · {vi.games.change}</button></h2>
+    {status === "error" && <p role="alert">{vi.games.error} <button className="link" onClick={() => void load(username, nextPage ?? 0, games.length === 0)}>{vi.games.retry}</button></p>}
+    {status === "loading" && games.length === 0 && <p>{vi.games.loading}</p>}
+    {status === "idle" && games.length === 0 && <p>{vi.games.empty}</p>}
     <ul className="game-list">{games.map((game) => {
       const result = outcome(game);
       return <li key={`${game.url}-${game.endTime}`}>
         <span className={`outcome outcome-${result}`}>{OUTCOME_LABEL[result]}</span>
-        <span className="game-main"><b>{game.opponent}</b>{game.opponentRating ? ` (${game.opponentRating})` : ""}<small>{timeLabel(game)} · {game.userColor === "white" ? "Trắng" : "Đen"} · {when(game.endTime)}</small></span>
-        <button className="secondary" onClick={() => analyze(game)}>Phân tích</button>
+        <span className="game-main"><span className="game-name"><b>{game.opponent}</b>{game.opponentRating ? <em>{game.opponentRating}</em> : null}</span><small>{timeLabel(game)} · {game.userColor === "white" ? vi.games.white : vi.games.black} · {when(game.endTime)}</small></span>
+        <button className="secondary" onClick={() => analyze(game)}>{vi.games.analyze}</button>
       </li>;
     })}</ul>
-    {nextPage !== undefined && games.length > 0 && <button className="secondary wide" disabled={status === "loading"} onClick={() => void load(username, nextPage, false)}>{status === "loading" ? "Đang tải..." : "Tải thêm ván cũ hơn"}</button>}
+    {nextPage !== undefined && games.length > 0 && <button className="secondary wide" disabled={status === "loading"} onClick={() => void load(username, nextPage, false)}>{status === "loading" ? vi.games.loadingMore : vi.games.loadMore}</button>}
   </section>;
 }

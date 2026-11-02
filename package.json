@@ -14,12 +14,15 @@
     "test:safety": "vitest run tests/unit/safety.test.ts tests/integration/messaging.test.ts tests/integration/safetyHandlers.test.ts",
     "test:stockfish": "node scripts/stockfish-smoke.cjs",
     "validate:dist": "node scripts/validate-dist.cjs",
+    "package:store": "node scripts/package-store.cjs",
     "benchmark:analysis": "node scripts/benchmark-analysis.cjs",
     "benchmark:compatibility": "node scripts/compatibility-benchmark.cjs",
     "verify:release": "npm run typecheck && npm run lint && npm run test:unit && npm run test:integration && npm run test:safety && npm run build && npm run test:stockfish && npm run validate:dist",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@fontsource-variable/nunito": "5.3.0",
+    "@fontsource/patrick-hand": "5.3.0",
     "chess.js": "1.4.0",
     "idb": "8.0.3",
     "lucide-react": "0.542.0",

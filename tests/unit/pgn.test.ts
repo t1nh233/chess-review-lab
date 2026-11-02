@@ -9,7 +9,7 @@ describe("parsePgn", () => {
   it("parses en passant", () => { const game = parsePgn(EN_PASSANT); expect(game.moves.at(-1)?.uci).toBe("e5d6"); });
   it("preserves a checkmating SAN move", () => { const game = parsePgn(CHECKMATE); expect(game.moves.at(-1)).toMatchObject({ san: "Qh4#", uci: "d8h4" }); });
   it("accepts comments without treating them as moves", () => { const game = parsePgn("1. e4 {Center control} e5 2. Nf3 *"); expect(game.moves.map((move) => move.san)).toEqual(["e4", "e5", "Nf3"]); });
-  it("rejects invalid PGN with a readable error", () => expect(() => parsePgn("1. e4 e5 2. ThisIsNotAMove")).toThrow(/could not be parsed/i));
+  it("rejects invalid PGN with a readable error", () => expect(() => parsePgn("1. e4 e5 2. ThisIsNotAMove")).toThrow(/Không đọc được PGN/));
 });
 
 import { bookPlyCount } from "../../src/chess/openingBook";

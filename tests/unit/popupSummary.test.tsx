@@ -15,19 +15,19 @@ function completed(): ReviewSummary {
 describe("popup-first review summary", () => {
   it("renders real analysis progress without deep-review components", () => {
     render(<PopupSummaryView summary={{ ...completed(), status: "analyzing", currentPly: 57, currentDepth: 16, moves: [], whiteAccuracy: undefined, blackAccuracy: undefined }} onCancel={vi.fn()} onExit={vi.fn()} onDeep={vi.fn()}/>);
-    expect(screen.getByText("Analyzing 57 / 118")).toBeInTheDocument(); expect(screen.getByText("depth=16 | Stockfish 18 NNUE")).toBeInTheDocument();
-    expect(screen.queryByLabelText(/chessboard/i)).not.toBeInTheDocument(); expect(screen.queryByLabelText(/evaluation graph/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Quét nhanh 57 / 118")).toBeInTheDocument(); expect(screen.getByText("Độ sâu 16 · Stockfish 18")).toBeInTheDocument();
+    expect(screen.queryByLabelText(/chessboard/i)).not.toBeInTheDocument(); expect(screen.queryByLabelText(/biểu đồ đánh giá/i)).not.toBeInTheDocument();
   });
   it("reports refinement as a meaningful phase instead of fake whole-game linear progress", () => {
     render(<PopupSummaryView summary={{ ...completed(), status: "analyzing", phase: "refinement", phaseCompleted: 7, phaseTotal: 19, currentDepth: 18, moves: [], whiteAccuracy: undefined, blackAccuracy: undefined }} onCancel={vi.fn()} onExit={vi.fn()} onDeep={vi.fn()}/>);
-    expect(screen.getByText("Refining critical moves 7 / 19")).toBeInTheDocument();
-    expect(screen.queryByText(/Analyzing 7 \/ 118/)).not.toBeInTheDocument();
+    expect(screen.getByText("Soi kỹ nước quan trọng 7 / 19")).toBeInTheDocument();
+    expect(screen.queryByText(/Quét nhanh 7 \/ 118/)).not.toBeInTheDocument();
   });
   it("renders final scores but leaves the move list to the main review page", () => {
     render(<PopupSummaryView summary={completed()} onCancel={vi.fn()} onExit={vi.fn()} onDeep={vi.fn()}/>);
     expect(screen.getByText("91.2")).toBeInTheDocument(); expect(screen.getByText("88.4")).toBeInTheDocument();
-    expect(screen.queryByRole("table", { name: "Move classifications" })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/chessboard/i)).not.toBeInTheDocument(); expect(screen.queryByLabelText(/evaluation graph/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("table", { name: "Các nước đã phân tích" })).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/chessboard/i)).not.toBeInTheDocument(); expect(screen.queryByLabelText(/biểu đồ đánh giá/i)).not.toBeInTheDocument();
   });
   it("shows Chess.com's brief rows first and every category after expanding", () => {
     const categories = ["brilliant", "great", "book", "best", "excellent", "good", "inaccuracy", "mistake", "miss", "blunder"] as const;
@@ -37,7 +37,7 @@ describe("popup-first review summary", () => {
       { ply: index * 2 + 2, moveNumber: index + 1, color: "black" as const, san: `b${index + 1}`, displayClassification },
     ]));
     render(<PopupSummaryView summary={summary} onCancel={vi.fn()} onExit={vi.fn()} onDeep={vi.fn()}/>);
-    const table = screen.getByRole("table", { name: "Classification summary" });
+    const table = screen.getByRole("table", { name: "Tóm tắt phân loại nước đi" });
     expect(within(table).getByText("White Player")).toBeInTheDocument();
     expect(within(table).getByText("Black Player")).toBeInTheDocument();
     const rowKinds = () => Array.from(table.querySelectorAll("tr[data-classification]")).map((row) => row.getAttribute("data-classification"));
@@ -55,7 +55,7 @@ describe("popup-first review summary", () => {
   });
   it("hides Brilliant from the brief view when nobody has one", () => {
     render(<PopupSummaryView summary={completed()} onCancel={vi.fn()} onExit={vi.fn()} onDeep={vi.fn()}/>);
-    const table = screen.getByRole("table", { name: "Classification summary" });
+    const table = screen.getByRole("table", { name: "Tóm tắt phân loại nước đi" });
     expect(Array.from(table.querySelectorAll("tr[data-classification]")).map((row) => row.getAttribute("data-classification"))).toEqual(["great", "best", "excellent", "mistake", "miss", "blunder"]);
   });
   it("opens deep analysis using only the analysis identifier", () => {

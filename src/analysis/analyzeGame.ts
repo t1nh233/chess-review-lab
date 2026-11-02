@@ -150,8 +150,8 @@ function buildGameReview(game: ParsedGame, moves: MoveReview[], positions: Posit
   const specialPlies = moves.filter((move) => move.primaryClassification === "great" || move.primaryClassification === "brilliant" || move.tags.includes("missed_opportunity")).map((move) => move.ply);
   const classifierMode = options.compatibilityClassifier === false ? "strict" : "compatibility";
   const headline = largestError?.expectedPointsLoss > 0.05
-    ? `${largestError.san} on move ${largestError.ply} was the game's largest loss of expected score.`
-    : "Both sides kept their largest errors relatively small.";
+    ? `${largestError.san} (nước ${largestError.moveNumber}) là nước làm mất nhiều cơ hội nhất trong ván đấu.`
+    : "Cả hai bên đều không mắc sai lầm lớn.";
   return {
     game, moves, positions, whiteAccuracy: gameAccuracy(whiteMoves), blackAccuracy: gameAccuracy(blackMoves),
     summary: { headline, counts, criticalPlies, largestMistakePly: largestError?.ply, specialPlies },

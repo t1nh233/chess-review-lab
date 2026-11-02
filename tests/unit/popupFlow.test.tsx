@@ -26,7 +26,7 @@ describe("popup reset wiring", () => {
     const sendMessage = installChrome(summary("completed"));
     render(<Popup/>);
     fireEvent.click(await screen.findByRole("button", { name: "Phân tích ván mới" }));
-    expect(await screen.findByRole("button", { name: /Import PGN/i })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: /Nhập PGN/i })).toBeInTheDocument();
     const types = sendMessage.mock.calls.map(([message]) => message.type);
     expect(types).toContain("DISMISS_ANALYSIS");
     expect(types).not.toContain("START_ANALYSIS");
@@ -37,8 +37,9 @@ describe("popup reset wiring", () => {
     const sendMessage = installChrome(summary("analyzing"));
     render(<Popup/>);
     fireEvent.click(await screen.findByRole("button", { name: "Dừng và thoát" }));
-    expect(await screen.findByRole("button", { name: /Import PGN/i })).toBeInTheDocument();
-    expect(sendMessage.mock.calls.map(([message]) => message.type)).toEqual([
+    expect(await screen.findByRole("button", { name: /Nhập PGN/i })).toBeInTheDocument();
+    // The popup polls GET_ANALYSIS_STATE every 300 ms while a run is active; that polling is expected and timing dependent.
+    expect(sendMessage.mock.calls.map(([message]) => message.type).filter((type) => type !== "GET_ANALYSIS_STATE")).toEqual([
       "GET_ACTIVE_ANALYSIS", "CANCEL_ANALYSIS", "DISMISS_ANALYSIS",
     ]);
   });
@@ -68,12 +69,12 @@ describe("Chess.com just-finished game popup", () => {
   it("blocks LIVE_GAME and UNKNOWN without showing the last-game action", async () => {
     installGameSnapshot({ safetyState: "LIVE_GAME", pgn: null, url: "https://www.chess.com/game/live/123" });
     const view = render(<Popup/>);
-    expect(await screen.findByText("Ván đấu đang diễn ra")).toBeInTheDocument();
+    expect(await screen.findByText("Ván đang diễn ra")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Phân tích ván vừa chơi" })).not.toBeInTheDocument();
     view.unmount(); vi.unstubAllGlobals();
     installGameSnapshot({ safetyState: "UNKNOWN", pgn: null, url: "https://www.chess.com/game/live/123" });
     render(<Popup/>);
-    expect(await screen.findByText("Game status unconfirmed")).toBeInTheDocument();
+    expect(await screen.findByText("Chưa xác nhận được ván")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Phân tích ván vừa chơi" })).not.toBeInTheDocument();
   });
 
@@ -81,7 +82,7 @@ describe("Chess.com just-finished game popup", () => {
     const sendMessage = installGameSnapshot(completedSnapshot);
     render(<Popup/>);
     fireEvent.click(await screen.findByRole("button", { name: "Phân tích ván vừa chơi" }));
-    expect(await screen.findByLabelText("Analysis progress")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Tiến độ phân tích")).toBeInTheDocument();
     expect(sendMessage.mock.calls.filter(([message]) => message.type === "START_COMPLETED_ANALYSIS")).toHaveLength(1);
   });
 

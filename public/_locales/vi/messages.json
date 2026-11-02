@@ -1,0 +1,6 @@
+{
+  "extName": { "message": "Chess Review Lab - Phân tích ván cờ" },
+  "extShortName": { "message": "Chess Review Lab" },
+  "extDescription": { "message": "Phân tích lại ván cờ đã kết thúc ngay trên trình duyệt với Stockfish 18. Không tài khoản, không máy chủ, không theo dõi." },
+  "actionTitle": { "message": "Chess Review Lab" }
+}

@@ -11,8 +11,9 @@ function extensionAssets(): Plugin {
       mkdirSync(resolve(dist, "engine"), { recursive: true });
       copyFileSync(resolve("manifest.json"), resolve(dist, "manifest.json"));
       cpSync(resolve("public/icons"), resolve(dist, "icons"), { recursive: true });
+      cpSync(resolve("public/_locales"), resolve(dist, "_locales"), { recursive: true });
       const engineDir = resolve("node_modules/stockfish/bin");
-      for (const file of ["stockfish-18-single.js", "stockfish-18-single.wasm"]) {
+      for (const file of ["stockfish-18-lite-single.js", "stockfish-18-lite-single.wasm"]) {
         const source = resolve(engineDir, file);
         if (!existsSync(source)) throw new Error(`Missing Stockfish distribution: ${source}`);
         copyFileSync(source, resolve(dist, "engine", file));
@@ -24,7 +25,7 @@ function extensionAssets(): Plugin {
       const licenses = [
         ["chess.js", "chess.js-BSD-2-Clause.txt"], ["idb", "idb-ISC.txt"],
         ["lucide-react", "lucide-react-ISC.txt"], ["react", "react-MIT.txt"],
-        ["react-dom", "react-dom-MIT.txt"], ["scheduler", "scheduler-MIT.txt"],
+        ["react-dom", "react-dom-MIT.txt"], ["scheduler", "scheduler-MIT.txt"], ["@fontsource-variable/nunito", "nunito-OFL-1.1.txt"], ["@fontsource/patrick-hand", "patrick-hand-OFL-1.1.txt"],
       ];
       for (const [packageName, target] of licenses) {
         copyFileSync(resolve("node_modules", packageName, "LICENSE"), resolve(dist, "licenses", target));

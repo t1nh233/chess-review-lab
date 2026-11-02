@@ -20,14 +20,14 @@ export const BRIEF_CLASSIFICATIONS: readonly DisplayClassification[] = ["great",
 export const DISPLAY_CLASSIFICATION_META: Record<DisplayClassification, DisplayClassificationMeta> = {
   brilliant: { label: "Thiên tài", icon: "!!", semanticColor: CLASSIFICATION_THEME_TOKENS.brilliant },
   great: { label: "Tuyệt", icon: "!", semanticColor: CLASSIFICATION_THEME_TOKENS.great },
-  book: { label: "Chủ đề sách", icon: "≡", semanticColor: CLASSIFICATION_THEME_TOKENS.book },
+  book: { label: "Khai cuộc", icon: "≡", semanticColor: CLASSIFICATION_THEME_TOKENS.book },
   best: { label: "Tốt nhất", icon: "★", semanticColor: CLASSIFICATION_THEME_TOKENS.best },
-  excellent: { label: "Tuyệt vời", icon: "↑", semanticColor: CLASSIFICATION_THEME_TOKENS.excellent },
+  excellent: { label: "Xuất sắc", icon: "↑", semanticColor: CLASSIFICATION_THEME_TOKENS.excellent },
   good: { label: "Tốt", icon: "✓", semanticColor: CLASSIFICATION_THEME_TOKENS.good },
-  inaccuracy: { label: "Không chính xác", icon: "?!", semanticColor: CLASSIFICATION_THEME_TOKENS.inaccuracy },
+  inaccuracy: { label: "Thiếu chính xác", icon: "?!", semanticColor: CLASSIFICATION_THEME_TOKENS.inaccuracy },
   mistake: { label: "Sai lầm", icon: "?", semanticColor: CLASSIFICATION_THEME_TOKENS.mistake },
   miss: { label: "Bỏ lỡ", icon: "✕", semanticColor: CLASSIFICATION_THEME_TOKENS.miss },
-  blunder: { label: "Nước sai lầm ngớ ngẩn", icon: "??", semanticColor: CLASSIFICATION_THEME_TOKENS.blunder },
+  blunder: { label: "Sai nghiêm trọng", icon: "??", semanticColor: CLASSIFICATION_THEME_TOKENS.blunder },
 };
 
 export const DISPLAY_CLASSIFICATION_LABELS = Object.fromEntries(

@@ -89,10 +89,10 @@ async function validatedCompletedSnapshot(tabId: number, expectedGameId?: string
   if (snapshot?.safetyState !== "SAFE_COMPLETED_GAME") {
     const proven = await archiveVerifiedSnapshot(tabId, expectedGameId);
     if (proven) return proven;
-    throw new Error("The Chess.com game is no longer verified as completed.");
+    throw new Error("Chưa xác nhận được ván này đã kết thúc. Hãy mở lại popup sau vài giây.");
   }
   const actualGameId = snapshot.completedGame?.gameId ?? extractChessComGameId(snapshot.url);
-  if (expectedGameId && actualGameId !== expectedGameId) throw new Error("The completed game changed before analysis started.");
+  if (expectedGameId && actualGameId !== expectedGameId) throw new Error("Ván đang mở đã thay đổi trước khi phân tích bắt đầu. Hãy thử lại.");
   return snapshot;
 }
 

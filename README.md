@@ -1,6 +1,6 @@
 # Chess Review Lab
 
-Chess Review Lab is an original Microsoft Edge Manifest V3 extension for local, post-game chess review. It accepts finished Chess.com games (picked from your public game list or the current page), pasted PGN, and uploaded `.pgn` files. Analysis runs in the browser with the locally packaged Stockfish 18 NNUE WebAssembly engine; there is no backend, account, telemetry, analytics, or cloud engine. The only network calls are reads of Chess.com's public archive (`api.chess.com/pub`).
+Chess Review Lab is an original Microsoft Edge Manifest V3 extension for local, post-game chess review. It accepts finished Chess.com games (picked from your public game list or the current page), pasted PGN, and uploaded `.pgn` files. Analysis runs in the browser with the locally packaged Stockfish 18 lite WebAssembly engine; there is no backend, account, telemetry, analytics, or cloud engine. The only network calls are reads of Chess.com's public archive (`api.chess.com/pub`).
 
 ## Features
 
@@ -147,7 +147,7 @@ Automatic extraction uses only legitimately available public page content and is
 
 - Chess.com markup can change; page scraping is best-effort. Completion is also verified through the public archive, which lists finished games only, and manual PGN import is always available.
 - The conservative completion detector may classify an unfamiliar completed page as `UNKNOWN` rather than risk live assistance.
-- The packaged Stockfish 18 build is the full NNUE single-threaded WASM (~113 MB, no SharedArrayBuffer needed). It is the strongest engine that runs in a stock MV3 extension, but loads slower than the former 7 MB lite build and uses more memory (Hash 128 MB).
+- The packaged Stockfish 18 build is the lite single-threaded WASM (~7 MB, no SharedArrayBuffer needed). It keeps the extension small and quick to install and load, at the cost of slightly lower playing strength than the full 113 MB build; the Fast, Compatibility, and Deep presets compensate with search depth (Hash 64 MB).
 - No cloud synchronization is provided; cached reviews stay in the current Edge profile and are retained up to the configured local limit.
 - Browser/Edge unpacked-extension acceptance must be performed on a desktop environment that permits loading extensions; automated tests do not replace that manual check.
 
