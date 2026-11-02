@@ -45,13 +45,11 @@ export default defineConfig({
         offscreen: resolve("offscreen.html"),
         review: resolve("review.html"),
         background: resolve("src/background/serviceWorker.ts"),
-        content: resolve("src/content/chessComContentScript.ts"),
         engineWorker: resolve("src/engine/stockfishWorker.ts"),
       },
       output: {
         entryFileNames: (chunk) => {
           if (chunk.name === "background") return "background/serviceWorker.js";
-          if (chunk.name === "content") return "content/chessComContentScript.js";
           if (chunk.name === "engineWorker") return "engine/stockfishWorker.js";
           return "assets/[name]-[hash].js";
         },

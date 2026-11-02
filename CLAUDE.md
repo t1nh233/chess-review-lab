@@ -16,7 +16,7 @@ npm run test                 # all vitest
 npx vitest run tests/unit/safety.test.ts          # single file
 npx vitest run -t "name pattern"                  # single test by name
 npm run test:unit | test:integration | test:safety
-npm run build                # vite build -> dist/ (the unpacked extension)
+npm run build                # vite build + content-script IIFE build -> dist/ (the unpacked extension)
 npm run test:stockfish       # smoke-tests the engine files in dist/ (build first)
 npm run validate:dist        # validate dist after every production build
 npm run package:store        # zip dist/ -> release/chess-review-lab-<version>.zip for Edge Add-ons (fails if >50 MB)
@@ -32,7 +32,7 @@ Note: git may report "dubious ownership" for this directory; that requires `git 
 
 The domain layer (`src/chess`, `src/engine`, `src/analysis`, `src/safety`) is independent of React. UI lives in `src/popup`, `src/review`, `src/components`, `src/presentation`.
 
-Durable analysis flow: `popup -> service worker coordinator (src/background) -> offscreen document (src/offscreen) -> module Worker -> Stockfish Worker`. The offscreen host owns the engine client, so closing the popup does not cancel analysis; the popup reconnects to a compact session summary, and the full review is persisted by analysis ID (IndexedDB, `src/storage`) and opened in `review.html` on demand. Visiting Chess.com alone never starts the engine. Entry points: `popup.html`, `review.html`, `offscreen.html`, `manifest.json`, built by `vite.config.ts` (which also copies the Stockfish JS/WASM and license files into `dist/`).
+Durable analysis flow: `popup -> service worker coordinator (src/background) -> offscreen document (src/offscreen) -> module Worker -> Stockfish Worker`. The offscreen host owns the engine client, so closing the popup does not cancel analysis; the popup reconnects to a compact session summary, and the full review is persisted by analysis ID (IndexedDB, `src/storage`) and opened in `review.html` on demand. Visiting Chess.com alone never starts the engine. Entry points: `popup.html`, `review.html`, `offscreen.html`, `manifest.json`, built by `vite.config.ts` (the content script is built separately by `vite.content.config.ts` as one self-contained IIFE, because content scripts are classic scripts and cannot use static `import`; `validate:dist` fails if it does) (which also copies the Stockfish JS/WASM and license files into `dist/`).
 
 Analysis pipeline (`src/analysis/analyzeGame.ts`): build canonical position table -> base MultiPV1 pass at depth 12–14 for all positions -> `refinementPolicy.ts` (config in `refinementConfig.json`) selectively refines only boundary/unstable/critical/mate-changing/special candidates -> selective MultiPV3 evidence. Versioned position cache (`positionAnalysisCache.ts`) lets deeper entries satisfy shallower requests. `AbortSignal` cancels queued work and sends UCI `stop`. Engine searches are serialized in `StockfishClient.analyze` (a new request waits for an aborted one to finish). Theme (dark default) is applied through `src/theme/themeMode.ts` and `data-theme` CSS tokens. Review presets: Fast depth 16, Compatibility 20, Deep 22.
 
@@ -53,7 +53,7 @@ Design source of truth: the Claude Design canvas "Chess Review Lab" (tokens, mas
 
 ## Fair-play safety (fail-closed, do not weaken)
 
-`src/safety/liveGameGuard.ts` defines exactly four states: `SAFE_COMPLETED_GAME`, `SAFE_IMPORTED_PGN`, `LIVE_GAME`, `UNKNOWN`; only the two SAFE states are authorized, and `UNKNOWN` fails closed. The guard is enforced independently in the popup, Chess.com adapter (`src/adapters/chessCom`, `src/content`), service worker, pipeline, engine client, and engine worker. Chess.com completion requires a final result plus positive completion evidence; any live indicator wins; a FEN or URL alone is insufficient. Extraction uses only public page content (no private endpoints). Any change touching these paths must keep `npm run test:safety` passing.
+`src/safety/liveGameGuard.ts` defines exactly four states: `SAFE_COMPLETED_GAME`, `SAFE_IMPORTED_PGN`, `LIVE_GAME`, `UNKNOWN`; only the two SAFE states are authorized, and `UNKNOWN` fails closed. The guard is enforced independently in the popup, Chess.com adapter (`src/adapters/chessCom`, `src/content`), service worker, pipeline, engine client, and engine worker. Chess.com completion requires a final result plus positive completion evidence; any live indicator wins; a FEN or URL alone is insufficient. Extraction uses only public page content (no private endpoints). The content script is declared statically only for game paths (`/game/*`, `/play/*`, `/live*`, `/analysis/*`, `/games/*`; guarded by `tests/unit/manifestScope.test.ts` and `validate:dist`) and is injected on demand by the popup (`inspectTab`, activeTab + `scripting`) elsewhere on chess.com; if injection fails the state stays UNKNOWN. Any change touching these paths must keep `npm run test:safety` passing.
 
 ## Licensing
 

@@ -31,6 +31,10 @@ const csp = manifest.content_security_policy?.extension_pages ?? "";
 if (!csp.includes("script-src 'self'")) failures.push("Extension CSP must restrict scripts to self.");
 if (/https?:/.test(csp) || /'unsafe-eval'/.test(csp)) failures.push("Extension CSP permits remote or unsafe executable code.");
 
+for (const script of manifest.content_scripts ?? []) {
+  for (const match of script.matches ?? []) if (match === "https://www.chess.com/*" || match === "<all_urls>" || match.startsWith("*")) failures.push(`Content script match is too broad: ${match}`);
+}
+if (!(manifest.permissions ?? []).includes("scripting")) failures.push("The popup injects the content script on demand; the scripting permission is required.");
 requireFile(manifest.background?.service_worker ?? "__missing__");
 requireFile(manifest.action?.default_popup ?? "__missing__");
 for (const [size, icon] of Object.entries(manifest.icons ?? {})) {
@@ -38,6 +42,13 @@ for (const [size, icon] of Object.entries(manifest.icons ?? {})) {
   requirePngSize(icon, Number(size));
 }
 for (const script of manifest.content_scripts ?? []) for (const file of script.js ?? []) requireFile(file);
+for (const script of manifest.content_scripts ?? []) for (const file of script.js ?? []) {
+  const target = path.join(root, file);
+  // Content scripts are classic scripts: a static import/export is a syntax error and the script would never run.
+  const code = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+  const staticModuleSyntax = new RegExp(String.raw`(^|[;}\n])\s*(import\s*[{*"']|export\s*[{*]|export\s+(default|const|function|class)\b)`);
+  if (staticModuleSyntax.test(code)) failures.push(`Content script ${file} must be a single classic script (found static import/export).`);
+}
 for (const required of [
   "review.html", "offscreen.html", "engine/stockfishWorker.js", "engine/stockfish-18-lite-single.js",
   "engine/stockfish-18-lite-single.wasm", "engine/COPYING.txt", "LICENSES_THIRD_PARTY.md",

@@ -27,11 +27,12 @@ Chess Review Lab là dự án độc lập, không liên kết hay được bả
 ## Giải trình quyền (Notes for certification)
 | Quyền | Lý do |
 |---|---|
-| `activeTab` | Đọc tab Chess.com hiện tại khi người dùng mở popup, để kiểm tra ván đã kết thúc và lấy PGN. |
+| `activeTab` | Chỉ khi người dùng bấm biểu tượng tiện ích: đọc tab Chess.com hiện tại để kiểm tra ván đã kết thúc và lấy PGN. |
+| `scripting` | Khi người dùng mở popup trên một trang Chess.com chưa có sẵn script (ví dụ vừa chuyển trang trong ứng dụng), nạp script đọc trạng thái ván của đúng tab đó. Không nạp tự động ở nơi khác. |
 | `storage` | Lưu cài đặt giao diện, tên người dùng Chess.com và lịch sử phân tích cục bộ. |
 | `offscreen` | Chạy engine Stockfish ở nền để đóng popup không làm hủy phân tích. |
 | `alarms` | Mỗi phút kiểm tra kho lưu trữ công khai xem có ván mới kết thúc để hiện huy hiệu "NEW". |
-| `https://www.chess.com/*` | Content script đọc nội dung công khai của trang ván cờ để xác định ván đã kết thúc và lấy PGN. |
+| `https://www.chess.com/*` | Đọc nội dung công khai của trang ván cờ để xác định ván đã kết thúc và lấy PGN. Content script chạy sẵn chỉ trên các đường dẫn có ván cờ: `/game/*`, `/play/*`, `/live*`, `/analysis/*`, `/games/*` (không chạy trên diễn đàn, câu đố, bài viết, trang thành viên). |
 | `https://api.chess.com/*` | Đọc danh sách ván đã kết thúc từ API công khai `api.chess.com/pub`. |
 | `'wasm-unsafe-eval'` (CSP) | Bắt buộc để chạy WebAssembly của Stockfish được đóng gói cục bộ; không tải mã từ xa. |
 

@@ -10,6 +10,7 @@
   "minimum_chrome_version": "116",
   "permissions": [
     "activeTab",
+    "scripting",
     "storage",
     "offscreen",
     "alarms"
@@ -41,7 +42,11 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.chess.com/*"
+        "https://www.chess.com/game/*",
+        "https://www.chess.com/play/*",
+        "https://www.chess.com/live*",
+        "https://www.chess.com/analysis/*",
+        "https://www.chess.com/games/*"
       ],
       "js": [
         "content/chessComContentScript.js"

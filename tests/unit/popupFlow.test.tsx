@@ -132,3 +132,39 @@ describe("Chess.com just-finished game popup", () => {
     expect(sendMessage.mock.calls.some(([message]) => message.type === "START_COMPLETED_ANALYSIS")).toBe(false);
   });
 });
+
+describe("on-demand content script injection (non-game Chess.com pages)", () => {
+  const snapshot = { safetyState: "SAFE_COMPLETED_GAME", pgn: `[Result "0-1"]\n\n1. f3 e5 2. g4 Qh4# 0-1`, url: "https://www.chess.com/home", completedGame: { gameId: "123", gameUrl: "https://www.chess.com/game/live/123", result: "0-1", moveCount: 4 } };
+  function install(inject: () => Promise<unknown>) {
+    const sendMessage = vi.fn(async (message: { type: string }) => {
+      if (message.type === "GET_ACTIVE_ANALYSIS") return { ok: true };
+      if (message.type === "GET_COMPLETED_ANALYSIS") return { ok: true, acquisition: { status: "available", source: "page", pgn: snapshot.pgn } };
+      return { ok: true };
+    });
+    // The first INSPECT_PAGE fails exactly like a tab that has no content script yet; later ones answer.
+    const tabsSend = vi.fn().mockRejectedValueOnce(new Error("Receiving end does not exist.")).mockResolvedValue(snapshot);
+    const executeScript = vi.fn(inject);
+    vi.stubGlobal("chrome", {
+      runtime: { sendMessage, getURL: (path: string) => `chrome-extension://test/${path}` },
+      tabs: { query: vi.fn(async () => [{ id: 7, url: "https://www.chess.com/home" }]), sendMessage: tabsSend, create: vi.fn() },
+      scripting: { executeScript },
+    });
+    return { executeScript, tabsSend };
+  }
+
+  it("injects the packaged content script once, then inspects the page", async () => {
+    const { executeScript, tabsSend } = install(async () => []);
+    render(<Popup/>);
+    expect(await screen.findByRole("button", { name: "Phân tích ván vừa chơi" })).toBeInTheDocument();
+    expect(executeScript).toHaveBeenCalledTimes(1);
+    expect(executeScript).toHaveBeenCalledWith({ target: { tabId: 7 }, files: ["content/chessComContentScript.js"] });
+    expect(tabsSend).toHaveBeenCalledTimes(2);
+  });
+
+  it("stays fail-closed when the injection is refused", async () => {
+    install(async () => { throw new Error("Cannot access contents of the page."); });
+    render(<Popup/>);
+    expect(await screen.findByText("Chưa xác nhận được ván")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Phân tích ván vừa chơi" })).not.toBeInTheDocument();
+  });
+});

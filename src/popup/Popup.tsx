@@ -15,6 +15,15 @@ import type { PgnAcquisitionResult } from "../adapters/chessCom/pgnAcquisition";
 type PageState = "loading" | "unsupported" | "completed" | "acquiring" | "pgn_unavailable" | "live" | "unknown";
 type CompletedResponse = { ok: boolean; summary?: ReviewSummary; cached?: boolean; attached?: boolean; acquisition?: PgnAcquisitionResult; error?: string };
 async function message<T>(value: unknown): Promise<T> { return chrome.runtime.sendMessage(value) as Promise<T>; }
+/** Asks the page for its state. Game pages already have the content script; on any other Chess.com page it is injected on demand (activeTab). Failure stays fail-closed (UNKNOWN). */
+async function inspectTab(tabId: number): Promise<ChessComPageSnapshot> {
+  const ask = () => chrome.tabs.sendMessage(tabId, { type: "INSPECT_PAGE" }) as Promise<ChessComPageSnapshot>;
+  try { return await ask(); }
+  catch {
+    await chrome.scripting.executeScript({ target: { tabId }, files: ["content/chessComContentScript.js"] });
+    return await ask();
+  }
+}
 
 export { PopupSummaryView };
 
@@ -50,7 +59,7 @@ export function Popup() {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab.id || !tab.url?.startsWith("https://www.chess.com/")) { setActiveTabId(null); setSnapshot(null); setPageState("unsupported"); return; }
       setActiveTabId(tab.id);
-      let response = await chrome.tabs.sendMessage(tab.id, { type: "INSPECT_PAGE" }) as ChessComPageSnapshot;
+      let response = await inspectTab(tab.id);
       if (response.safetyState !== "SAFE_COMPLETED_GAME" && (response.hints?.gameId ?? response.completedGame?.gameId)) {
         // Page markup is best-effort; a game that already exists in the public archive is finished.
         const proof = await message<{ ok: boolean; snapshot?: ChessComPageSnapshot }>({ type: "VERIFY_ARCHIVE_COMPLETION", tabId: tab.id, expectedGameId: response.hints?.gameId });
